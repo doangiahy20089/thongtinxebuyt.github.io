@@ -1,9 +1,8 @@
-﻿```
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bus Schedule Display</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -27,48 +26,109 @@
             background-color: #666 !important;
         }
 
-        .bus-active {
-            transform: scale(1.05);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        .cancel-message {
+            display: none;
+            font-size: 20px;
+            color: red;
+            margin-top: 20px;
+        }
+
+        .prompt-message {
+            font-size: 20px;
+            color: blue;
+            margin-top: 20px;
+        }
+
+        /* Dark mode styles */
+        .dark {
+            background-color: #1a202c;
+            color: #e2e8f0;
+        }
+
+            .dark .bg-white {
+                background-color: #2d3748 !important;
+            }
+
+            .dark .text-gray-800 {
+                color: #f7fafc !important;
+            }
+
+            .dark .text-gray-600 {
+                color: #cbd5e0 !important;
+            }
+
+            .dark .bg-gray-50 {
+                background-color: #4a5568 !important;
+            }
+
+            .dark .bg-blue-800 {
+                background-color: #2b6cb0 !important;
+            }
+
+            .dark .border-gray-200 {
+                border-color: #718096 !important;
+            }
+
+            .dark .bg-blue-50 {
+                background-color: #2c5282 !important;
+            }
+
+            .dark .text-blue-800 {
+                color: #bee3f8 !important;
+            }
+
+        .toggle-dark {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background-color: #ddd;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .dark .toggle-dark {
+            background-color: #4a5568;
+            color: white;
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-4xl bg-white rounded-xl shadow-2xl overflow-hidden">
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4 transition-colors duration-300">
+    <div class="w-full max-w-4xl bg-white rounded-xl shadow-2xl overflow-hidden relative">
+        <!-- Toggle Dark Mode Button -->
+        <button class="toggle-dark" onclick="toggleDarkMode()">🌙/☀️</button>
+
         <div class="bg-blue-800 py-3 px-6">
-            <h1 class="text-2xl font-bold text-white text-center">HỆ THỐNG THÔNG TIN XE BUÝT</h1>
+            <h1 id="header" class="text-2xl font-bold text-white text-center cursor-pointer">
+                HỆ THỐNG THÔNG TIN XE BUÝT
+            </h1>
         </div>
 
         <div class="grid grid-cols-5 gap-4 p-6">
-            <!-- Left Column - Selection Buttons -->
+            <!-- Left Column - Buttons -->
             <div class="col-span-1 flex flex-col space-y-4">
-                <button onclick="selectBus(8)"
-                        class="bus-btn py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    Xe số 8
-                </button>
-                <button onclick="selectBus(9)"
-                        class="bus-btn py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    Xe số 9
-                </button>
-                <button onclick="selectBus(10)"
-                        class="bus-btn py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    Xe số 10
-                </button>
+                <button onclick="selectBus(8)" class="bus-btn py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500">Xe số 8</button>
+                <button onclick="selectBus(9)" class="bus-btn py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500">Xe số 9</button>
+                <button onclick="selectBus(10)" class="bus-btn py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500">Xe số 10</button>
             </div>
 
-            <!-- Middle Column - Bus Information -->
+            <!-- Middle Column - Info -->
             <div class="col-span-3 flex items-center justify-center">
                 <div class="w-full h-64 bg-gray-50 border-2 border-gray-200 rounded-xl p-6 text-center">
                     <div class="bus-info h-full flex flex-col items-center justify-center space-y-2">
-                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/8fb613a0-bb10-40ce-87c9-7ab5b7874f06.png" alt="Illustration of a modern city bus with vibrant blue color and route number display" class="w-48 mb-4 rounded-lg" />
-                        <p class="text-5xl font-bold text-gray-800" id="bus-number">8</p>
-                        <p class="text-lg text-gray-600" id="bus-details">Tuyến đường: Bến Thành - Chợ Lớn</p>
-                        <p class="text-lg text-gray-600" id="frequency">Tần suất: 15 phút/chuyến</p>
+                        <img id="bus-image" src="" alt="" class="w-48 mb-4 rounded-lg hidden" />
+                        <p class="text-5xl font-bold text-gray-800" id="bus-number">Hãy chọn xe</p>
+                        <p class="text-lg text-gray-600" id="bus-details"></p>
+                        <p class="text-lg text-gray-600" id="frequency"></p>
+                        <p id="cancellation-message" class="cancel-message">Chuyến xe đã bị hủy.</p>
+                        <p id="prompt-message" class="prompt-message">Vui lòng nhấn chọn xe</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Column - LED Indicators -->
+            <!-- Right Column - LEDs -->
             <div class="col-span-1 flex flex-col items-center justify-center space-y-8">
                 <div class="led-indicator w-12 h-12 rounded-full bg-red-500 led-off" id="led-8"></div>
                 <div class="led-indicator w-12 h-12 rounded-full bg-red-500 led-off" id="led-9"></div>
@@ -81,69 +141,100 @@
         </div>
     </div>
 
-    <script>// Bus information data
+    <script>
         const busData = {
             8: {
                 route: "Bến Thành - Chợ Lớn",
                 frequency: "15 phút/chuyến",
                 status: "Đang hoạt động",
-                imgAlt: "Blue city bus with route number 8 displayed prominently, driving through urban streets"
+                image: "xe8.jpg",
+                alt: "Yellow city bus number 8, driving through downtown"
             },
             9: {
                 route: "Bến Xe Miền Đông - Bến Xe An Sương",
                 frequency: "10 phút/chuyến",
                 status: "Đang hoạt động",
-                imgAlt: "Green articulated bus with route number 9, traveling along a major highway"
+                image: "xe9.jpg",
+                alt: "Green articulated bus with route number 9, traveling along a major highway"
             },
             10: {
                 route: "Bến Xe Củ Chi - Khu Công Nghệ Cao",
                 frequency: "25 phút/chuyến",
                 status: "Chuẩn bị",
-                imgAlt: "Red express bus with route number 10, serving suburban areas with limited stops"
+                image: "xe10.jpg",
+                alt: "Blue electric bus number 10, parked at a terminal"
             }
         };
 
-        // Initialize with bus 8 selected
-        document.addEventListener('DOMContentLoaded', function() {
-            selectBus(8);
+        let clickCount = 0;
+        let lastBusNumber = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
             updateTime();
-            setInterval(updateTime, 60000); // Update time every minute
+            setInterval(updateTime, 60000);
+            document.getElementById('header').addEventListener('click', resetPage);
         });
 
+        function resetPage() {
+            lastBusNumber = null;
+            clickCount = 0;
+
+            document.getElementById('bus-number').textContent = "Hãy chọn xe";
+            document.getElementById('bus-details').textContent = "";
+            document.getElementById('frequency').textContent = "";
+            document.getElementById('cancellation-message').style.display = 'none';
+            document.getElementById('prompt-message').style.display = 'block';
+            document.getElementById('bus-image').classList.add('hidden');
+
+            document.querySelectorAll('.led-indicator').forEach(led => {
+                led.classList.remove('led-on');
+                led.classList.add('led-off');
+            });
+        }
+
         function selectBus(busNumber) {
-            // Update bus info display
+            const img = document.getElementById('bus-image');
+            const cancellationMessage = document.getElementById('cancellation-message');
+            const promptMessage = document.getElementById('prompt-message');
+
+            cancellationMessage.style.display = 'none';
+            promptMessage.style.display = 'none';
+
+            if (lastBusNumber === busNumber) {
+                clickCount++;
+            } else {
+                clickCount = 1;
+            }
+            lastBusNumber = busNumber;
+
+            if (clickCount === 2) {
+                document.getElementById(`led-${busNumber}`).classList.remove('led-on');
+                document.getElementById(`led-${busNumber}`).classList.add('led-off');
+                cancellationMessage.style.display = 'block';
+                document.getElementById('bus-number').textContent = "Hãy chọn xe";
+                document.getElementById('bus-details').textContent = "";
+                document.getElementById('frequency').textContent = "";
+                img.classList.add('hidden');
+                promptMessage.style.display = 'block';
+                clickCount = 0;
+                return;
+            }
+
+            // Update info and image
             document.getElementById('bus-number').textContent = busNumber;
             document.getElementById('bus-details').textContent = `Tuyến đường: ${busData[busNumber].route}`;
             document.getElementById('frequency').textContent = `Tần suất: ${busData[busNumber].frequency}`;
+            img.src = busData[busNumber].image;
+            img.alt = busData[busNumber].alt;
+            img.classList.remove('hidden');
 
-            // Update bus image
-            const busImg = document.querySelector('.bus-info img');
-            busImg.src = `https://placehold.co/200x100?text=Xe+Buýt+${busNumber}`;
-            busImg.alt = busData[busNumber].imgAlt;
-
-            // Update active state for bus box
-            document.querySelector('.bus-info').classList.add('bus-active');
-            setTimeout(() => {
-                document.querySelector('.bus-info').classList.remove('bus-active');
-            }, 300);
-
-            // Update LED indicators
+            // Update LEDs
             document.querySelectorAll('.led-indicator').forEach(led => {
                 led.classList.remove('led-on');
                 led.classList.add('led-off');
             });
             document.getElementById(`led-${busNumber}`).classList.remove('led-off');
             document.getElementById(`led-${busNumber}`).classList.add('led-on');
-
-            // Change button colors
-            document.querySelectorAll('.bus-btn').forEach(btn => {
-                btn.classList.remove('bg-blue-800');
-                btn.classList.add('bg-blue-600');
-            });
-            if(event) {
-                event.target.classList.remove('bg-blue-600');
-                event.target.classList.add('bg-blue-800');
-            }
         }
 
         function updateTime() {
@@ -156,9 +247,12 @@
                 month: '2-digit',
                 year: 'numeric'
             };
-            document.getElementById('update-time').textContent =
-                now.toLocaleDateString('vi-VN', options);
-        }</script>
+            document.getElementById('update-time').textContent = now.toLocaleDateString('vi-VN', options);
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+    </script>
 </body>
 </html>
-```
