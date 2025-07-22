@@ -112,6 +112,9 @@
                 <button onclick="selectBus(8)" class="bus-btn py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500">Xe số 8</button>
                 <button onclick="selectBus(9)" class="bus-btn py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500">Xe số 9</button>
                 <button onclick="selectBus(10)" class="bus-btn py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500">Xe số 10</button>
+                <!-- Payment buttons -->
+                <button id="payment-button" class="py-3 px-4 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-lg transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500" onclick="showBankPaymentLink()">Thanh toán bằng ngân hàng</button>
+                <button id="momo-payment-button" class="py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500" onclick="showPaymentLink()">Thanh toán bằng MoMo</button>
             </div>
 
             <!-- Middle Column - Info -->
@@ -252,6 +255,22 @@
 
         function toggleDarkMode() {
             document.documentElement.classList.toggle('dark');
+        }
+
+        function showPaymentLink() {
+            // Liên kết thanh toán MoMo
+            const momoLink = "https://www.momo.vn/ve-xe?fromType=nav_menu"; // Liên kết chuyển tiền MoMo
+
+            // Mở liên kết trong tab mới
+            window.open(momoLink, '_blank');
+        }
+
+        function showBankPaymentLink() {
+            // Liên kết thanh toán MB Bank
+            const bankLink = "mbbank://"; // URL scheme cho MB Bank
+
+            // Mở liên kết trong cùng một tab
+            window.open(bankLink, '_self');
         }
     </script>
 </body>
