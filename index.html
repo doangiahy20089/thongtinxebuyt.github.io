@@ -16,6 +16,269 @@
             }
         }
 
+        <!DOCTYPE html >
+        <html lang="vi" >
+        <head >
+        <meta charset="UTF-8" / >
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" / >
+        <title > Tuyến xe buýt</title >
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" / >
+        <style >
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #fff;
+            color: #000;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .dark-mode {
+            background-color: #121212;
+            color: #fff;
+        }
+
+        header {
+            background-color: #2196F3;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        #resetPage {
+            cursor: pointer;
+        }
+
+        #darkModeToggle {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.3rem 0.6rem;
+            border: none;
+            background: white;
+            color: #2196F3;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .bus-list {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .bus-card {
+            width: 120px;
+            padding: 0.5rem;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+            .bus-card img {
+                width: 100%;
+                border-radius: 8px;
+            }
+
+            .bus-card.selected {
+                border-color: #2196F3;
+            }
+
+        #map {
+            height: 400px;
+            margin: 1rem;
+            border-radius: 10px;
+        }
+
+        #stop-list {
+            margin: 1rem;
+            padding: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+
+        .dark-mode #stop-list {
+            background: #1e1e1e;
+            border-color: #555;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1 id="resetPage">THÔNG TIN XE BUÝT</h1>
+        <button id="darkModeToggle">🌙</button>
+    </header>
+
+    <div class="bus-list">
+        <div class="bus-card" data-bus="8">
+            <img src="xe8.jpg" alt="Xe buýt tuyến 8" />
+            <p>Tuyến 08</p>
+        </div>
+        <div class="bus-card" data-bus="9">
+            <img src="xe9.jpg" alt="Xe buýt tuyến 9" />
+            <p>Tuyến 09</p>
+        </div>
+        <div class="bus-card" data-bus="10">
+            <img src="xe10.jpg" alt="Xe buýt tuyến 10" />
+            <p>Tuyến 10</p>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <div id="stop-list">
+        <h3>Danh sách trạm sẽ đi qua:</h3>
+        <ul id="stops"></ul>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const darkModeBtn = document.getElementById("darkModeToggle");
+        darkModeBtn.addEventListener("click", () => {
+            document.body.classList.toggle("dark-mode");
+        });
+
+        // Reset page when clicking on the title
+        document.getElementById("resetPage").addEventListener("click", () => {
+            location.reload();
+        });
+
+        const busCards = document.querySelectorAll(".bus-card");
+        const stopList = document.getElementById("stops");
+        let map = L.map('map').setView([10.75, 106.65], 12);
+        let routeLayer = null;
+        let stopMarkers = [];
+        let userMarker = null;
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        const busRoutes = {
+            "8": {
+                color: "blue",
+                coords: [
+                    [10.740, 106.665, "Bến xe buýt Quận 8"],
+                    [10.743, 106.667, "Đường Tạ Quang Bửu"],
+                    [10.750, 106.660, "Quốc lộ 50"],
+                    [10.755, 106.655, "Cầu Nhị Thiên Đường"],
+                    [10.760, 106.660, "Đường Tùng Thiện Vương"],
+                    [10.765, 106.662, "Cầu Chà Và"],
+                    [10.768, 106.663, "Đường Hải Thượng Lãn Ông"],
+                    [10.770, 106.664, "Đường Triệu Quang Phục"],
+                    [10.772, 106.665, "Đường Châu Văn Liêm"],
+                    [10.775, 106.667, "Đường Hồng Bàng"],
+                    [10.780, 106.670, "Đường Lý Thường Kiệt"],
+                    [10.785, 106.672, "Đường Hoàng Văn Thụ"],
+                    [10.790, 106.675, "Đường Phan Đăng Lưu"],
+                    [10.795, 106.678, "Đường Bạch Đằng"],
+                    [10.800, 106.680, "Đường Xô Viết Nghệ Tĩnh"],
+                    [10.805, 106.683, "Quốc lộ 13"],
+                    [10.810, 106.685, "Đường Phạm Văn Đồng"],
+                    [10.815, 106.688, "Đường Kha Vạn Cân"],
+                    [10.820, 106.690, "Đường Võ Văn Ngân"],
+                    [10.825, 106.693, "Ngã tư Thủ Đức"],
+                    [10.830, 106.695, "Xa lộ Hà Nội"],
+                    [10.835, 106.698, "Quốc lộ 1"],
+                    [10.840, 106.700, "Cầu vượt quay đầu"],
+                    [10.850, 106.703, "Đường 621"],
+                    [10.860, 106.705, "Quảng trường Sáng Tạo"],
+                    [10.865, 106.707, "Đường Vành Đai"],
+                    [10.868, 106.709, "Đường Nguyễn Hiền"],
+                    [10.870, 106.800, "Bến xe buýt Khu A ĐHQG TP.HCM"]
+                ]
+            },
+            "9": {
+                color: "green",
+                coords: [
+                    [10.755, 106.635, "Bến xe buýt Chợ Lớn (Bến A)"],
+                    [10.758, 106.637, "Đường Lê Quang Sung"],
+                    [10.760, 106.638, "Đường Phạm Đình Hổ"],
+                    [10.765, 106.640, "Đường Hồng Bàng"],
+                    [10.770, 106.645, "Đường Kinh Dương Vương"],
+                    [10.775, 106.648, "Quốc lộ 1"],
+                    [10.780, 106.650, "Đường Đinh Đức Thiện"],
+                    [10.785, 106.653, "Hương lộ 11"],
+                    [10.790, 106.655, "Hưng Long"]
+                ]
+            },
+            "10": {
+                color: "red",
+                coords: [
+                    [10.740, 106.620, "Bến xe Miền Tây"],
+                    [10.745, 106.625, "Đường Kinh Dương Vương"],
+                    [10.750, 106.630, "Đường Hậu Giang"],
+                    [10.755, 106.635, "Đường Tháp Mười"],
+                    [10.760, 106.640, "Đường Hải Thượng Lãn Ông"],
+                    [10.765, 106.645, "Đường Châu Văn Liêm"],
+                    [10.770, 106.650, "Đường Hồng Bàng"],
+                    [10.775, 106.655, "Đường An Dương Vương"],
+                    [10.780, 106.660, "Đường Nguyễn Tri Phương"],
+                    [10.785, 106.665, "Đường 3 Tháng 2"],
+                    [10.790, 106.670, "Đường Lý Thái Tổ"],
+                    [10.795, 106.675, "Đường Điện Biên Phủ"],
+                    [10.800, 106.680, "Đường Võ Nguyên Giáp"],
+                    [10.805, 106.685, "Xa lộ Hà Nội"],
+                    [10.810, 106.690, "Quốc lộ 1"],
+                    [10.815, 106.695, "Cầu vượt quay đầu"],
+                    [10.820, 106.700, "Đường song hành bờ Nam Quốc lộ 1"],
+                    [10.825, 106.705, "Đường 621"],
+                    [10.830, 106.710, "Quảng Trường Sáng Tạo"],
+                    [10.835, 106.715, "Đường Vành Đai"],
+                    [10.840, 106.720, "Đường Nguyên Hiền"],
+                    [10.845, 106.725, "Bến xe buýt khu A Đại học Quốc gia TP.HCM"]
+                ]
+            }
+        };
+
+        busCards.forEach(card => {
+            card.addEventListener("click", () => {
+                busCards.forEach(c => c.classList.remove("selected"));
+                card.classList.add("selected");
+
+                const busNumber = card.dataset.bus;
+                const route = busRoutes[busNumber];
+
+                if (routeLayer) routeLayer.remove();
+                stopMarkers.forEach(marker => marker.remove());
+                stopMarkers = [];
+                stopList.innerHTML = "";
+
+                const polyCoords = route.coords.map(c => [c[0], c[1]]);
+                map.setView(polyCoords[0], 13);
+                routeLayer = L.polyline(polyCoords, {
+                    color: route.color,
+                    weight: 5,
+                    opacity: 0.8
+                }).addTo(map);
+
+                route.coords.forEach(([lat, lng, name], index) => {
+                    const marker = L.marker([lat, lng]).addTo(map).bindPopup(name);
+                    stopMarkers.push(marker);
+                    const li = document.createElement("li");
+                    li.textContent = `${index + 1}. ${name}`;
+                    stopList.appendChild(li);
+                });
+
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(position => {
+                        const latlng = [position.coords.latitude, position.coords.longitude];
+                        if (userMarker) userMarker.remove();
+                        userMarker = L.marker(latlng).addTo(map).bindPopup("Vị trí của bạn").openPopup();
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
+
         .led-on {
             background-color: #4ade80 !important;
             box-shadow: 0 0 10px 5px rgba(74, 222, 128, 0.7);
