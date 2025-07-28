@@ -4,7 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tuyến xe buýt</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" /> <!--Thêm CSS (thư viện JS) Leaflet mã nguồn mở cho việc xây dựng bản đồ-->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -97,6 +100,7 @@
     </header>
 
     <div class="bus-list">
+        <!--Khai báo data list xe-->
         <div class="bus-card" data-bus="8">
             <img src="xe8.jpg" alt="Xe buýt tuyến 8" />
             <p>Tuyến 08</p>
@@ -111,15 +115,19 @@
         </div>
     </div>
 
-    <div id="map"></div>
+    <div id="map"></div> <!--Vị trí đặt map-->
 
     <div id="stop-list">
+        <!--Danh sách hiền thị các trạm đi qua của xe-->
         <h3>Danh sách trạm sẽ đi qua:</h3>
         <ul id="stops"></ul>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <script>
+    //cài đặt chức năng darkmode
         const darkModeBtn = document.getElementById("darkModeToggle");
         darkModeBtn.addEventListener("click", () => {
             document.body.classList.toggle("dark-mode");
@@ -132,10 +140,12 @@
 
         const busCards = document.querySelectorAll(".bus-card");
         const stopList = document.getElementById("stops");
-        let map = L.map('map').setView([10.75, 106.65], 12);
+        let map = L.map('map').setView([10.75, 106.65], 12); /*tạo 1 map vị trí*/
+
         let routeLayer = null;
         let stopMarkers = [];
         let userMarker = null;
+        let xeMarkers = {};
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
@@ -220,25 +230,37 @@
 
         busCards.forEach(card => {
             card.addEventListener("click", () => {
+                //Xóa class selected mặc định ra khỏi khi nhấn bus car
                 busCards.forEach(c => c.classList.remove("selected"));
+                //Thêm class selected vào card của mỗi xe
                 card.classList.add("selected");
 
-                const busNumber = card.dataset.bus;
-                const route = busRoutes[busNumber];
+                const busNumber = card.dataset.bus; //Lấy thông tin tuyến tương ứng từ object busRoutes
+                const route = busRoutes[busNumber];// Lấy road đường của map tuyến xe theo từng số
 
-                if (routeLayer) routeLayer.remove();
-                stopMarkers.forEach(marker => marker.remove());
+                if (routeLayer) routeLayer.remove();//xóa tuyến trước đó
+                stopMarkers.forEach(marker => marker.remove());//xóa tất cả marker cũ
                 stopMarkers = [];
                 stopList.innerHTML = "";
 
-                const polyCoords = route.coords.map(c => [c[0], c[1]]);
-                map.setView(polyCoords[0], 13);
-                routeLayer = L.polyline(polyCoords, {
-                    color: route.color,
-                    weight: 5,
-                    opacity: 0.8
+                /* const polyCoords = route.coords.map(c => [c[0], c[1]]);
+                 map.setView(polyCoords[0], 13); //Tương thích kích thước của map
+                 routeLayer = L.polyline(polyCoords, { //Vẽ đường tuyến mới
+                     color: route.color,
+                     weight: 5,
+                     opacity: 0.8
+                 }).addTo(map);*/
+                routeLayer = L.Routing.control({
+                    waypoints: route.coords.map(c => L.latLng(c[0], c[1])),
+                    lineOptions: { styles: [{ color: route.color, weight: 5 }] },
+                    createMarker: () => null,
+                    addWaypoints: false,
+                    draggableWaypoints: false,
+                    routeWhileDragging: false,
+                    show: false
                 }).addTo(map);
 
+                //Thêm từng tuyến trạm lên layout
                 route.coords.forEach(([lat, lng, name], index) => {
                     const marker = L.marker([lat, lng]).addTo(map).bindPopup(name);
                     stopMarkers.push(marker);
@@ -246,7 +268,7 @@
                     li.textContent = `${index + 1}. ${name}`;
                     stopList.appendChild(li);
                 });
-
+                //Nếu được cấp quyền thì hiển thị
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(position => {
                         const latlng = [position.coords.latitude, position.coords.longitude];
@@ -256,6 +278,40 @@
                 }
             });
         });
+        const mqttClient = new Paho.MQTT.Client("wss://214f09799e8e4edc953995b375c60fa3.s1.eu.hivemq.cloud:8884/mqtt", "client-hhhh" + Math.random());
+        mqttClient.connect({
+            useSSL: true,
+            userName: "project",
+            password: "345678910JQKA2toitrang",//Pass
+            onSuccess: () => {
+                console.log("MQTT connected");
+                mqttClient.subscribe("8");
+                mqttClient.subscribe("9");
+                mqttClient.subscribe("10");
+            },
+            onFailure: err => console.error("Lỗi kết nối MQTT", err)
+        });
+
+        mqttClient.onMessageArrived = msg => {
+            const topic = msg.destinationName;
+            const [latStr, lngStr] = msg.payloadString.trim().split(',');
+            const lat = parseFloat(latStr);
+            const lng = parseFloat(lngStr);
+            console.log(`MQTT: topic=${topic}, lat=${lat}, lng=${lng}`);
+            if (isNaN(lat) || isNaN(lng)) return;
+
+            if (xeMarkers[topic]) {
+                xeMarkers[topic].setLatLng([lat, lng]);
+            } else {
+                const icon = L.icon({
+                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/190/190411.png',
+                    iconSize: [30, 30]
+                });
+                xeMarkers[topic] = L.marker([lat, lng], { icon })
+                    .addTo(map)
+                    .bindPopup(`🚍 Xe tuyến ${topic}`);
+            }
+        };
     </script>
 </body>
 </html>
