@@ -299,19 +299,31 @@
             const topic = msg.destinationName;
             const payload = msg.payloadString.trim();
 
+            // Updated logic to handle different message types
             if (payload.startsWith("xe")) {
                 const parts = payload.split(" ");
-                const busNumber = parts[1]; // Số xe
-                const distance = parts[3]; // Khoảng cách
-                const stopName = parts[5]; // Tên trạm
+                const busNumber = parts[1]; // Số xe (bus number)
 
+                if (payload.includes("da den")) {
+                    // Handle bus arrival
+                    const message = `🚍 Xe ${busNumber} đã đến trạm!`;
+                    alert(message);
+                } else if (payload.includes("cach")) {
+                    // Handle distance updates
+                    const distance = parts[3]; // Khoảng cách
+                    const stopName = parts.slice(4).join(" "); // Tên trạm
+                    const message = `Xe ${busNumber} cách trạm ${stopName} ${distance}m`;
+                    console.log(message);
+                }
+
+                // Additional processing for bus routes
                 const route = busRoutes[busNumber];
                 if (route) {
                     const stop = route.coords.find(([lat, lng, name]) => name.includes(stopName));
                     if (stop) {
                         const [stopLat, stopLng, stopName] = stop;
                         L.marker([stopLat, stopLng]).addTo(map).bindPopup(`Trạm ${stopName}`).openPopup();
-                        map.setView([stopLat, stopLng], 14); // Đặt lại vị trí bản đồ đến trạm
+                        map.setView([stopLat, stopLng], 14); // Set map view to the stop
                     }
                 }
             } else if (payload.includes(",")) {
@@ -321,9 +333,9 @@
                 console.log(`MQTT: topic=${topic}, lat=${lat}, lng=${lng}`);
                 if (isNaN(lat) || isNaN(lng)) return;
 
-                // Cập nhật vị trí xe buýt
+                // Update bus position
                 if (xeMarkers[topic]) {
-                    xeMarkers[topic].setLatLng([lat, lng]); // Cập nhật vị trí
+                    xeMarkers[topic].setLatLng([lat, lng]); // Update position
                 } else {
                     const icon = L.icon({
                         iconUrl: 'https://cdn-icons-png.flaticon.com/512/190/190411.png',
@@ -335,6 +347,7 @@
                 }
             }
         };
+
     </script>
 </body>
 </html>
