@@ -299,10 +299,20 @@
             const topic = msg.destinationName;
             const payload = msg.payloadString.trim();
 
-            if (payload.startsWith("xe da toi tram")) {
-                const stopNumber = payload.split(" ")[3]; // Lấy số trạm từ thông điệp
-                if (stopNumber) {
-                    alert(`Xe đã tới trạm ${stopNumber}!`);
+            if (payload.startsWith("xe")) {
+                const parts = payload.split(" ");
+                const busNumber = parts[1]; // Số xe
+                const distance = parts[3]; // Khoảng cách
+                const stopName = parts[5]; // Tên trạm
+
+                const route = busRoutes[busNumber];
+                if (route) {
+                    const stop = route.coords.find(([lat, lng, name]) => name.includes(stopName));
+                    if (stop) {
+                        const [stopLat, stopLng, stopName] = stop;
+                        L.marker([stopLat, stopLng]).addTo(map).bindPopup(`Trạm ${stopName}`).openPopup();
+                        map.setView([stopLat, stopLng], 14); // Đặt lại vị trí bản đồ đến trạm
+                    }
                 }
             } else if (payload.includes(",")) {
                 const [latStr, lngStr] = payload.split(',');
@@ -311,20 +321,9 @@
                 console.log(`MQTT: topic=${topic}, lat=${lat}, lng=${lng}`);
                 if (isNaN(lat) || isNaN(lng)) return;
 
+                // Cập nhật vị trí xe buýt
                 if (xeMarkers[topic]) {
-                    xeMarkers[topic].setLatLng([lat, lng]);
-                    let closestStop = null;
-                    let closestDistance = Infinity;
-
-                    busRoutes[topic].coords.forEach(([stopLat, stopLng, stopName]) => {
-                        const distance = getDistance(lat, lng, stopLat, stopLng);
-                        if (distance < closestDistance) {
-                            closestDistance = distance;
-                            closestStop = stopName;
-                        }
-                    });
-
-                    xeMarkers[topic].getPopup().setContent(`🚍 Xe tuyến ${topic}<br><img src="${busImages[topic]}" alt="Xe buýt tuyến ${topic}" style="width: 100px;"/><br>Khoảng cách đến ${closestStop}: ${closestDistance.toFixed(2)} km`);
+                    xeMarkers[topic].setLatLng([lat, lng]); // Cập nhật vị trí
                 } else {
                     const icon = L.icon({
                         iconUrl: 'https://cdn-icons-png.flaticon.com/512/190/190411.png',
@@ -333,18 +332,6 @@
                     xeMarkers[topic] = L.marker([lat, lng], { icon })
                         .addTo(map)
                         .bindPopup(`🚍 Xe tuyến ${topic}<br><img src="${busImages[topic]}" alt="Xe buýt tuyến ${topic}" style="width: 100px;"/>`);
-                }
-            } else if (payload.startsWith("xe xxx cách trạm")) {
-                const [busNumber, stopNumber] = payload.split(" ").slice(1, 3);
-                const route = busRoutes[busNumber];
-
-                if (route) {
-                    const stop = route.coords.find(([lat, lng, name]) => name.includes(stopNumber));
-                    if (stop) {
-                        const [stopLat, stopLng, stopName] = stop;
-                        L.marker([stopLat, stopLng]).addTo(map).bindPopup(`Trạm ${stopName}`).openPopup();
-                        map.setView([stopLat, stopLng], 14); // Đặt lại vị trí bản đồ đến trạm
-                    }
                 }
             }
         };
