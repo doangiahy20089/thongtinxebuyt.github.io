@@ -313,27 +313,24 @@
             }
 
             // Nếu là tin dạng "xe 8 da den" hoặc "xe 8 cach 2"
-            else if (payload.startsWith("xe")) {
-                const parts = payload.split(" ");
-                const busNumber = parts[1]; // "8"
+            // Xử lý tin nhắn kiểu: topic = tram/2, payload = "xe da toi tram"
+            else if (topic.startsWith("tram/") && payload === "xe da toi tram") {
+                const tramIndex = parseInt(topic.split("/")[1]); // Lấy số trạm từ topic: tram/2 => 2
+                if (isNaN(tramIndex)) return;
 
+                // Tìm xe đang được chọn (busCard đang có class 'selected')
+                const selectedCard = document.querySelector(".bus-card.selected");
+                if (!selectedCard) return;
+                const busNumber = selectedCard.dataset.bus;
                 const route = busRoutes[busNumber];
                 if (!route) return;
 
-                let index = -1;
-
-                if (payload.includes("da den")) {
-                    index = route.coords.length - 1;
-                } else if (payload.includes("cach")) {
-                    index = parseInt(parts[3]);
-                    if (isNaN(index) || index < 0 || index >= route.coords.length) return;
-                }
-
-                if (index >= 0) {
-                    const [lat, lng, stopName] = route.coords[index];
-                    updateBusMarker(busNumber, [lat, lng], `Trạm: ${stopName}`);
+                if (tramIndex >= 0 && tramIndex < route.coords.length) {
+                    const [lat, lng, stopName] = route.coords[tramIndex];
+                    updateBusMarker(busNumber, [lat, lng], `Xe vừa tới trạm: ${stopName}`);
                 }
             }
+
         };
 
         // Hàm cập nhật vị trí xe buýt lên bản đồ
