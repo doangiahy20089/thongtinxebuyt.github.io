@@ -297,56 +297,63 @@
 
         mqttClient.onMessageArrived = msg => {
             const topic = msg.destinationName;
-            const payload = msg.payloadString.trim();
+            const payload = msg.payloadString.trim().toLowerCase();
 
-            // Updated logic to handle different message types
-            if (payload.startsWith("xe")) {
-                const parts = payload.split(" ");
-                const busNumber = parts[1]; // Số xe (bus number)
+            console.log("MQTT message:", payload);
 
-                if (payload.includes("da den")) {
-                    // Handle bus arrival
-                    const message = `🚍 Xe ${busNumber} đã đến trạm!`;
-                    alert(message);
-                } else if (payload.includes("cach")) {
-                    // Handle distance updates
-                    const distance = parts[3]; // Khoảng cách
-                    const stopName = parts.slice(4).join(" "); // Tên trạm
-                    const message = `Xe ${busNumber} cách trạm ${stopName} ${distance}m`;
-                    console.log(message);
-                }
-
-                // Additional processing for bus routes
-                const route = busRoutes[busNumber];
-                if (route) {
-                    const stop = route.coords.find(([lat, lng, name]) => name.includes(stopName));
-                    if (stop) {
-                        const [stopLat, stopLng, stopName] = stop;
-                        L.marker([stopLat, stopLng]).addTo(map).bindPopup(`Trạm ${stopName}`).openPopup();
-                        map.setView([stopLat, stopLng], 14); // Set map view to the stop
-                    }
-                }
-            } else if (payload.includes(",")) {
+            // Nếu là tọa độ dạng lat,lng
+            if (payload.includes(",")) {
                 const [latStr, lngStr] = payload.split(',');
                 const lat = parseFloat(latStr);
                 const lng = parseFloat(lngStr);
-                console.log(`MQTT: topic=${topic}, lat=${lat}, lng=${lng}`);
                 if (isNaN(lat) || isNaN(lng)) return;
 
-                // Update bus position
-                if (xeMarkers[topic]) {
-                    xeMarkers[topic].setLatLng([lat, lng]); // Update position
-                } else {
-                    const icon = L.icon({
-                        iconUrl: 'https://cdn-icons-png.flaticon.com/512/190/190411.png',
-                        iconSize: [30, 30]
-                    });
-                    xeMarkers[topic] = L.marker([lat, lng], { icon })
-                        .addTo(map)
-                        .bindPopup(`🚍 Xe tuyến ${topic}<br><img src="${busImages[topic]}" alt="Xe buýt tuyến ${topic}" style="width: 100px;"/>`);
+                // Cập nhật vị trí xe buýt theo tọa độ
+                updateBusMarker(topic, [lat, lng]);
+            }
+
+            // Nếu là tin dạng "xe 8 da den" hoặc "xe 8 cach 2"
+            else if (payload.startsWith("xe")) {
+                const parts = payload.split(" ");
+                const busNumber = parts[1]; // "8"
+
+                const route = busRoutes[busNumber];
+                if (!route) return;
+
+                let index = -1;
+
+                if (payload.includes("da den")) {
+                    index = route.coords.length - 1;
+                } else if (payload.includes("cach")) {
+                    index = parseInt(parts[3]);
+                    if (isNaN(index) || index < 0 || index >= route.coords.length) return;
+                }
+
+                if (index >= 0) {
+                    const [lat, lng, stopName] = route.coords[index];
+                    updateBusMarker(busNumber, [lat, lng], `Trạm: ${stopName}`);
                 }
             }
         };
+
+        // Hàm cập nhật vị trí xe buýt lên bản đồ
+        function updateBusMarker(busNumber, latlng, popupText = "") {
+            const icon = L.icon({
+                iconUrl: 'https://cdn-icons-png.flaticon.com/512/190/190411.png',
+                iconSize: [30, 30]
+            });
+
+            if (xeMarkers[busNumber]) {
+                xeMarkers[busNumber].setLatLng(latlng);
+                if (popupText) xeMarkers[busNumber].bindPopup(popupText);
+            } else {
+                xeMarkers[busNumber] = L.marker(latlng, { icon }).addTo(map);
+                const html = `<b>🚍 Xe tuyến ${busNumber}</b><br>${popupText}<br><img src="${busImages[busNumber]}" style="width:100px"/>`;
+                xeMarkers[busNumber].bindPopup(html);
+            }
+
+            map.setView(latlng, 14);
+        }
 
     </script>
 </body>
