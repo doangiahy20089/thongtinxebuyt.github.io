@@ -301,7 +301,7 @@
 
             console.log("MQTT message:", payload);
             //Xác nhận đây là topic dạng trạm/x
-            if (!topic.startsWitch("tram/")) return;
+            if (!topic.startsWith("tram/")) return;
             const tramIndex = parseInt(topic.split("/")[1]); // "tram/5" → 5
             if (isNaN(tramIndex)) return;
             //Kiểm tra nếu payload chứa thông tin xe đã đến
@@ -410,11 +410,12 @@
                 xeMarkers[busNumber].setLatLng(latlng);
                 if (popupText) xeMarkers[busNumber].bindPopup(popupText);
             } else {
-               /* xeMarkers[busNumber] = L.marker(latlng, { icon }).addTo(map);
-                const html = `<b>🚍 Xe tuyến ${busNumber}</b><br>${popupText}<br><img src="${busImages[busNumber]}" style="width:100px"/>`;
-                xeMarkers[busNumber].bindPopup(html); */
-                xeMarkers[id] = L.marker(latlng, { icon }).addTo(map);
-                xeMarkers[id].bindPopup(popupText || "Vị trí xe buýt");
+                xeMarkers[busNumber] = L.marker(latlng, { icon }).addTo(map);
+                console.log("Tạo marker xe:", busNumber, latlng, popupText);
+               // const html = `<b>🚍 Xe tuyến ${busNumber}</b><br>${popupText}<br><img src="${busImages[busNumber]}" style="width:100px"/>`;
+               // xeMarkers[busNumber].bindPopup(html); 
+                //xeMarkers[id] = L.marker(latlng, { icon }).addTo(map);
+               // xeMarkers[id].bindPopup(popupText || "Vị trí xe buýt");
             }
 
             map.setView(latlng, 14);
