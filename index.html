@@ -291,6 +291,7 @@
                 mqttClient.subscribe("8");
                 mqttClient.subscribe("9");
                 mqttClient.subscribe("10");
+                mqttClient.subscribe("tram/#");
             },
             onFailure: err => console.error("Lỗi kết nối MQTT", err)
         });
