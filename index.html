@@ -301,7 +301,30 @@
 
             console.log("MQTT message:", payload);
 
+            //if(topic==)
+            //topic trạm 5
+
+            //msg xe ... đã đến (nếu mes chứa "da den")
+            // thì --> dung 1 bien de luu topic, bien do se la tram
+            // tu tram do, trich vao toa do rieng cua tram
+
+            // trích cái xe ra từ msg
+           /* hiện ra xe nào đang ở trạm
+
+            --> điểm khác biệt là:
+            ban đầu: topic là xe, msg là tọa độ trạm luôn
+            bây g: topic là tên trạm thoi, tự trích xuất và lưu tọa độ riêng của trạm sau; msg sẽ là xe
+            */
+
+
+           /* đã đến trạm tách số xe trong trạm 
+            Làm hiển thị nhiều xe cùng lúc cùng 1 trạm
+            */
+
+
+
             // Nếu là tọa độ dạng lat,lng
+            /*
             if (payload.includes(",")) {
                 const [latStr, lngStr] = payload.split(',');
                 const lat = parseFloat(latStr);
@@ -324,11 +347,33 @@
                 const busNumber = selectedCard.dataset.bus;
                 const route = busRoutes[busNumber];
                 if (!route) return;
+                */
 
-                if (tramIndex >= 0 && tramIndex < route.coords.length) {
+            else if (topic.startsWith("tram/") && payload.includes("da den")) {
+                const tramIndex = parseInt(topic.split("/")[1]);
+                if (isNaN(tramIndex)) return;
+
+                // 🚌 Trích số xe từ chuỗi msg, ví dụ: "xe 8 da den"
+                const xeMatch = payload.match(/xe\s*(\d+)/);
+                if (!xeMatch) return;
+                const xeNumber = xeMatch[1]; // Ví dụ: "8"
+
+                // 🔍 Tìm tuyến xe đang được chọn
+                const route = busRoutes[xeNumber];
+                if (!route || tramIndex >= route.coords.length) return;
+
+                const [lat, lng, stopName] = route.coords[tramIndex];
+
+                // 🆕 Cập nhật xe này đến vị trí trạm
+                updateBusMarker(`${xeNumber}-at-tram-${tramIndex}`, [lat, lng], `Xe ${xeNumber} vừa tới trạm: ${stopName}`);
+            }
+
+
+
+                /* if (tramIndex >= 0 && tramIndex < route.coords.length) {
                     const [lat, lng, stopName] = route.coords[tramIndex];
                     updateBusMarker(busNumber, [lat, lng], `Xe vừa tới trạm: ${stopName}`);
-                }
+                } */
             }
 
         };
@@ -344,9 +389,11 @@
                 xeMarkers[busNumber].setLatLng(latlng);
                 if (popupText) xeMarkers[busNumber].bindPopup(popupText);
             } else {
-                xeMarkers[busNumber] = L.marker(latlng, { icon }).addTo(map);
+               /* xeMarkers[busNumber] = L.marker(latlng, { icon }).addTo(map);
                 const html = `<b>🚍 Xe tuyến ${busNumber}</b><br>${popupText}<br><img src="${busImages[busNumber]}" style="width:100px"/>`;
-                xeMarkers[busNumber].bindPopup(html);
+                xeMarkers[busNumber].bindPopup(html); */
+                xeMarkers[id] = L.marker(latlng, { icon }).addTo(map);
+                xeMarkers[id].bindPopup(popupText || "Vị trí xe buýt");
             }
 
             map.setView(latlng, 14);
