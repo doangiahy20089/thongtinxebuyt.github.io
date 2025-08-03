@@ -302,7 +302,7 @@
 
             console.log("MQTT message:", payload);
             //Xác nhận đây là topic dạng trạm/x
-            if (!topic.startsWith("tram/")) return;
+            if (!topic.startsWith("tram")) return;
             const tramIndex = parseInt(topic.split(" ")[1]); // "tram/5" → 5
             busRoutes["8"].coords.length === 28 // có 28 trạm từ 0 đến 27
             if (isNaN(tramIndex)) return;
