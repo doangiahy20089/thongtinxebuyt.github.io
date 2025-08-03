@@ -415,7 +415,7 @@
                // const html = `<b>🚍 Xe tuyến ${busNumber}</b><br>${popupText}<br><img src="${busImages[busNumber]}" style="width:100px"/>`;
                // xeMarkers[busNumber].bindPopup(html); 
                 //xeMarkers[id] = L.marker(latlng, { icon }).addTo(map);
-               // xeMarkers[id].bindPopup(popupText || "Vị trí xe buýt");
+                xeMarkers[busNumber].bindPopup(popupText || "Vị trí xe buýt");
             }
 
             map.setView(latlng, 14);
