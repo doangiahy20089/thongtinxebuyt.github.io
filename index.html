@@ -300,7 +300,28 @@
             const payload = msg.payloadString.trim().toLowerCase();
 
             console.log("MQTT message:", payload);
+            //Xác nhận đây là topic dạng trạm/x
+            if (!topic.startsWitch("tram/")) return;
+            const tramIndex = parseInt(topic.split("/")[1]); // "tram/5" → 5
+            if (isNaN(tramIndex)) return;
+            //Kiểm tra nếu payload chứa thông tin xe đã đến
+            if (!payload.includes("da den")) return;
 
+            //Xe... đã đến --> tách số xe 
+            const xeMatch = payload.match(/xe\s*(\d+)/);
+            if (!xeMatch) return;
+            const xeNumber = xeMatch[1]; // "9"
+
+            //Tìm tuyến đường ứng với số xe đó 
+            const route = busRoutes[xeNumber];
+            if (!route || tramIndex >= route.coords.length) return;
+
+            //Lấy tọa độ trạm từ dữ liệu tuyến xe
+            const [lat, lng, stopName] = route.coords[tramIndex];
+
+            //Tạo marker riêng biệt cho từng xe tại từng trạm
+            updateBusMarker(`${xeNumber}-at-tram-${tramIndex}`, [lat, lng], `Xe ${xeNumber} vừa tới trạm: ${stopName}`);
+            
             //if(topic==)
             //topic trạm 5
 
@@ -349,7 +370,7 @@
                 if (!route) return;
                 */
 
-            else if (topic.startsWith("tram/") && payload.includes("da den")) {
+           /* else if (topic.startsWith("tram/") && payload.includes("da den")) {
                 const tramIndex = parseInt(topic.split("/")[1]);
                 if (isNaN(tramIndex)) return;
 
@@ -367,14 +388,14 @@
                 // 🆕 Cập nhật xe này đến vị trí trạm
                 updateBusMarker(`${xeNumber}-at-tram-${tramIndex}`, [lat, lng], `Xe ${xeNumber} vừa tới trạm: ${stopName}`);
             }
-
+             */ 
 
 
                 /* if (tramIndex >= 0 && tramIndex < route.coords.length) {
                     const [lat, lng, stopName] = route.coords[tramIndex];
                     updateBusMarker(busNumber, [lat, lng], `Xe vừa tới trạm: ${stopName}`);
                 } */
-            }
+            
 
         };
 
@@ -389,11 +410,11 @@
                 xeMarkers[busNumber].setLatLng(latlng);
                 if (popupText) xeMarkers[busNumber].bindPopup(popupText);
             } else {
-               /* xeMarkers[busNumber] = L.marker(latlng, { icon }).addTo(map);
+                xeMarkers[busNumber] = L.marker(latlng, { icon }).addTo(map);
                 const html = `<b>🚍 Xe tuyến ${busNumber}</b><br>${popupText}<br><img src="${busImages[busNumber]}" style="width:100px"/>`;
-                xeMarkers[busNumber].bindPopup(html); */
-                xeMarkers[id] = L.marker(latlng, { icon }).addTo(map);
-                xeMarkers[id].bindPopup(popupText || "Vị trí xe buýt");
+                xeMarkers[busNumber].bindPopup(html); 
+               // xeMarkers[id] = L.marker(latlng, { icon }).addTo(map);
+                //xeMarkers[id].bindPopup(popupText || "Vị trí xe buýt");
             }
 
             map.setView(latlng, 14);
