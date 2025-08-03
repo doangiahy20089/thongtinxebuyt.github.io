@@ -307,10 +307,9 @@
             const tramIndex = parseInt(tramMatch[1]); // "tram5" → 5 */
             if (!topic.startsWith("tram/")) return;
             const tramIndex = parseInt(topic.split("/")[1]); // "tram/5" → 5
-            if (isNaN(tramIndex)) return;
             busRoutes["8"].coords.length === 28 // có 28 trạm từ 0 đến 27
-
-           // if (isNaN(tramIndex)) return;
+            if (isNaN(tramIndex)) return;
+          
             //Kiểm tra nếu payload chứa thông tin xe đã đến
             if (!payload.includes("da den")) return;
 
