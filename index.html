@@ -1,125 +1,143 @@
-﻿<!DOCTYPE html>
-<html lang="vi">
+﻿<!DOCTYPE html> <!--Phần khung cơ bản của html-->
+<html lang="vi"> <!--Khai báo trang html sử dụng Tiếng Việt-->
+
 <head>
+    <!--Đảm bảo hiển thị trang web trên mọi thiết bị -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tuyến xe buýt</title>
+    <!--viewport: là vùng hiển thị của trình duyệt trên thiết bị (đth) ,
+        width=device-width: chiều rộng trên trang màn hình sử dụng
+        initial-scale=1.0: mức zoom ban đầu là 100% định mức giao diện ban đầu-->
+
+    
+    <title>Tuyến xe buýt</title> <!--tiêu đề trang web-->
+    <!--Dùng để tải thư viện bên ngoài để hiển thị bản đồ (Leaflet), tuyến đường (Leaflet Routing Machine), và MQTT web-->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script> <!--link nhúng bản đồ-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script> <!--Nhúng web mqtt-->
+
+    <!--Dùng CSS xây dựng giao diện màu, định dạng cho từng mục -->
     <style>
         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            background-color: #fff;
-            color: #000;
-            transition: background-color 0.3s, color 0.3s;
+            font-family: Arial, sans-serif; /*font chữ: Arial hoặc bất kì font ko chân*/
+            margin: 0; /*Xóa khoảng cách mặc định (khoảng trắng) xung quanh thân trang.
+→ Cho giao diện gọn gàng hơn, không bị lệch.*/
+            background-color: #fff; /*Nền trắng (#fff là viết tắt của #ffffff).*/
+            color: #000; /*chỉnh màu chữ là màu đen*/
+            transition: background-color 0.3s, color 0.3s; /*animation chuyển màu đen thành trắng khi chuyển sang dark mode*/
         }
 
         .dark-mode {
-            background-color: #121212;
-            color: #fff;
+            background-color: #121212; /*đổi màu background trắng --> đen*/
+            color: #fff; /*đổi màu chữ thành trắng*/
         }
 
-        header {
-            background-color: #2196F3;
-            color: white;
-            padding: 1rem;
-            text-align: center;
-            position: sticky;
-            top: 0;
-            z-index: 10;
+        header { /*phần đầu thanh xanh dương trên cùng*/
+            background-color: #2196F3; /*mã màu thanh xanh dương trên cùng */
+            color: white; /*màu chữ trắng*/
+            padding: 1rem; /*tạo khung giữ web*/
+            text-align: center; /*chữ ở giữa phần khung xanh dương*/
+            position: sticky; /*cuộn trang xuống giữa header và body*/
+            top: 0; /*cố định vị trí trang web ở đầu trang*/
+            z-index: 10; /*header luôn ở đầu trang và được đè các layer khác lên*/
         }
 
         #resetPage {
-            cursor: pointer;
+            cursor: pointer; /*hiển thị con trỏ trên thanh header*/
         }
 
-        #darkModeToggle {
-            position: absolute;
-            top: 1rem;
+        #darkModeToggle { /*hiển thị darkmode trên web*/
+            position: absolute; /*vị trí giá trị tuyệt đối*/
+            top: 1rem; /*căn nút cách mép trên và mép phải góc bên phải của trang*/
             right: 1rem;
-            padding: 0.3rem 0.6rem;
-            border: none;
-            background: white;
-            color: #2196F3;
-            border-radius: 4px;
-            cursor: pointer;
+            padding: 0.3rem 0.6rem; /*tạo khung bên trên để hiển thị vị trí ở giữa*/
+            border: none; /*xóa viền thừa*/
+            background: white; /*nền của darkmode màu trắng*/
+            color: #2196F3; /*mã màu hình mặt trăng */
+            border-radius: 4px; /*bo góc */
+            cursor: pointer;/*tính năng ấn--> trỏ chuột */
         }
 
-        .bus-list {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            padding: 1rem;
+        .bus-list { /*chứa các phần tử của xe buýt*/
+            display: flex; /*trình bày các biến xe ngang trên 1 hàng 
+                            [Tuyến 08]   [Tuyến 05]   [Tuyến 150] */
+            justify-content: center; /*cho các phần tử con ở giữa theo chiều ngang*/
+            gap: 1rem; /*tạo khoảng cách giữa các phần con*/
+            padding: 1rem; /*tạo khoảng cách khung chứa các phần thử xe con*/
         }
 
-        .bus-card {
-            width: 120px;
-            padding: 0.5rem;
-            border: 2px solid #ccc;
-            border-radius: 10px;
-            text-align: center;
-            cursor: pointer;
+        .bus-card { /*xây dựng giao diện của từng thẻ xe */
+            width: 120px; /*chiều rộng của từng thẻ là 120px*/
+            padding: 0.5rem; /*tạo khoảng trống ở trong*/
+            border: 2px solid #ccc; /*khung viền của thẻ*/
+            border-radius: 10px; /*bo góc thẻ*/
+            text-align: center; /*khoảng cách thẻ ở giữa*/
+            cursor: pointer;/*tính năng trỏ chuột-->click*/
         }
 
-            .bus-card img {
-                width: 100%;
-                border-radius: 8px;
+            .bus-card img { /*hiển thị hình ảnh của từng xe*/
+                width: 100%; /*giúp thẻ ảnh full ảnh không tràn viền */
+                border-radius: 8px; /*bo góc ảnh*/
             }
 
             .bus-card.selected {
-                border-color: #2196F3;
+                border-color: #2196F3; /*khi được click vào thì khung viền thay đổi từ xám -->xanh*/
             }
 
-        #map {
-            height: 400px;
-            margin: 1rem;
-            border-radius: 10px;
+        #map { /*hiển thị giao diện map*/
+            height: 400px; /*chiều cao của map*/
+            margin: 1rem; /*tạo khoảng trống xung quanh*/
+            border-radius: 10px;/*bo góc map*/
         }
 
         #stop-list {
-            margin: 1rem;
-            padding: 1rem;
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            background: #f9f9f9;
+            margin: 1rem; /*tạo khoảng trống xung quanh*/
+            padding: 1rem; /*tạo khung chứa danh sách ở bên dưới*/
+            border: 1px solid #ccc; /*tạo viền mỏng cho danh sách trạm*/
+            border-radius: 10px; /*bo góc khung ở dưới*/
+            background: #f9f9f9; /*màu xám của danh sách*/
         }
 
         .dark-mode #stop-list {
-            background: #1e1e1e;
-            border-color: #555;
+            background: #1e1e1e;/*đổi màu nền xám --> đen */
+            border-color: #555; /*màu viền đổi từ xám nhạt-->xám đen*/
         }
     </style>
 </head>
+
 <body>
-    <header>
-        <h1 id="resetPage">THÔNG TIN XE BUÝT</h1>
-        <button id="darkModeToggle">🌙</button>
+    <header> <!--phần đầu-->
+        <h1 id="resetPage">THÔNG TIN XE BUÝT</h1> <!--hiển thị thanh tiêu đề với kích thước tiêu đề lớn-->
+        <button id="darkModeToggle">🌙</button> <!--khởi tạo hiển thị nút ấn darkmode-->
     </header>
 
-    <div class="bus-list">
+    <div class="bus-list"> <!--Tạo thẻ xe 8-->
         <div class="bus-card" data-bus="8">
             <img src="xe8.jpg" alt="Xe buýt tuyến 8" />
             <p>Tuyến 08</p>
         </div>
-        <div class="bus-card" data-bus="5">
+    <!--danh sách thẻ xe 5-->
+    <div class="bus-card" data-bus="5">
             <img src="xe5.jpg" alt="Xe buýt tuyến 5" />
             <p>Tuyến 05</p>
         </div>
-        <div class="bus-card" data-bus="150">
+    <!--danh sách thẻ xe 150-->
+    <div class="bus-card" data-bus="150">
             <img src="xe150.jpg" alt="Xe buýt tuyến 150" />
             <p>Tuyến 150</p>
         </div>
     </div>
 
+    <!--Khởi tạo hiển thị map-->
     <div id="map"></div>
 
+    <!--Hiển thị tên danh sách trạm-->
     <div id="stop-list">
         <h3>Danh sách trạm sẽ đi qua:</h3>
         <ul id="stops"></ul>
     </div>
+
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
@@ -292,7 +310,7 @@
             }
         };
 
-        function getDistance(lat1, lng1, lat2, lng2) {
+        /*function getDistance(lat1, lng1, lat2, lng2) {
             const R = 6371; // Bán kính trái đất (km)
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLng = (lng2 - lng1) * Math.PI / 180;
@@ -301,20 +319,22 @@
                 Math.sin(dLng / 2) * Math.sin(dLng / 2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             return R * c; // Khoảng cách (km)
-        }
+        } */
 
         busCards.forEach(card => {
-            card.addEventListener("click", () => {
+            card.addEventListener("click", () => { /*xử lí việc nhấn vào trạm*/
                 busCards.forEach(c => c.classList.remove("selected"));
                 card.classList.add("selected");
 
-                const busNumber = card.dataset.bus;
-                const route = busRoutes[busNumber];
+                const busNumber = card.dataset.bus; /*dữ liệu số xe sẽ cập nhật dữ liệu xe buýt đó*/
+                const route = busRoutes[busNumber]; /*vẽ đường giữa các trạm*/
 
+                /* clear road map cũ */
                 if (routeLayer) routeLayer.remove();
-                stopMarkers.forEach(marker => marker.remove());
-                stopMarkers = [];
-                stopList.innerHTML = "";
+                stopMarkers.forEach(marker => marker.remove()); /*xóa các điểm trên trạm cũ*/
+                stopMarkers = []; /*trống danh sách trạm hiển thị */
+                stopList.innerHTML = ""; /*xóa các trạm trên giao diện*/
+
 
                 routeLayer = L.Routing.control({
                     waypoints: route.coords.map(c => L.latLng(c[0], c[1])),
@@ -351,9 +371,9 @@
             password: "345678910JQKA2toitrang",
             onSuccess: () => {
                 console.log("MQTT connected");
-                mqttClient.subscribe("8");
+               /* mqttClient.subscribe("8");
                 mqttClient.subscribe("9");
-                mqttClient.subscribe("10");
+                mqttClient.subscribe("10"); */
                 mqttClient.subscribe("tram/#");
             },
             onFailure: err => console.error("Lỗi kết nối MQTT", err)
@@ -391,8 +411,9 @@
             const [lat, lng, stopName] = route.coords[tramIndex];
 
             //Tạo marker riêng biệt cho từng xe tại từng trạm
-            updateBusMarker(`${xeNumber}-at-tram-${tramIndex}`, [lat, lng], `Xe ${xeNumber} vừa tới trạm: ${stopName}`);
-            
+          //  updateBusMarker(`${xeNumber}-at-tram-${tramIndex}`, [lat, lng], `Xe ${xeNumber} vừa tới trạm: ${stopName}`);
+            updateBusMarker(xeNumber, [lat, lng], `Xe ${xeNumber} vừa tới trạm: ${stopName}`);
+
             //if(topic==)
             //topic trạm 5
 
@@ -471,7 +492,7 @@
         };
 
         // Hàm cập nhật vị trí xe buýt lên bản đồ
-        function updateBusMarker(busNumber, latlng, popupText = "") {
+         /*function updateBusMarker(busNumber, latlng, popupText = "") {
             const icon = L.icon({
                 iconUrl: 'https://cdn-icons-png.flaticon.com/512/190/190411.png',
                 iconSize: [30, 30]
@@ -490,7 +511,26 @@
             }
 
             map.setView(latlng, 14);
+        } */
+        function updateBusMarker(busNumber, latlng, popupText = "") {
+            const icon = L.icon({
+                iconUrl: 'https://cdn-icons-png.flaticon.com/512/190/190411.png',
+                iconSize: [30, 30]
+            });
+
+            // Nếu marker đã tồn tại → cập nhật lại vị trí và popup
+            if (xeMarkers[busNumber]) {
+                xeMarkers[busNumber].setLatLng(latlng);
+                if (popupText) xeMarkers[busNumber].bindPopup(popupText);
+            } else {
+                // Nếu chưa có → tạo mới
+                xeMarkers[busNumber] = L.marker(latlng, { icon }).addTo(map);
+                xeMarkers[busNumber].bindPopup(popupText || "Vị trí xe buýt");
+            }
+
+            map.setView(latlng, 14);
         }
+
 
     </script>
 </body>
