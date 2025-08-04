@@ -412,8 +412,9 @@
 
             //Tạo marker riêng biệt cho từng xe tại từng trạm
           //  updateBusMarker(`${xeNumber}-at-tram-${tramIndex}`, [lat, lng], `Xe ${xeNumber} vừa tới trạm: ${stopName}`);
-            updateBusMarker(xeNumber, [lat, lng], `Xe ${xeNumber} vừa tới trạm: ${stopName}`);
-
+            updateBusMarker(`Xe ${xeNumber} vừa tới trạm: ${stopName}`, xeNumber, [lat, lng]);
+            //tramIndex chức năng là truyền các trạm và các tuyến đường tương ứng 
+            //bỏ tramIndex để cập nhật liên tục vị trí xe đó
             //if(topic==)
             //topic trạm 5
 
