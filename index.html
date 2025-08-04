@@ -371,6 +371,8 @@
             if (!topic.startsWith("tram/")) return;
             const tramIndex = parseInt(topic.split("/")[1]); // "tram/5" → 5
             busRoutes["8"].coords.length === 28 // có 28 trạm từ 0 đến 27
+            busRoutes["5"].coords.length === 24
+            busRoutes["150"].coords.length === 34
             if (isNaN(tramIndex)) return;
           
             //Kiểm tra nếu payload chứa thông tin xe đã đến
