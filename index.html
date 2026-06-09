@@ -1,540 +1,876 @@
-﻿<!DOCTYPE html> <!--Phần khung cơ bản của html-->
-<html lang="vi"> <!--Khai báo trang html sử dụng Tiếng Việt-->
-
+<!DOCTYPE html>
+<html lang="vi">
 <head>
-    <!--Đảm bảo hiển thị trang web trên mọi thiết bị -->
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!--viewport: là vùng hiển thị của trình duyệt trên thiết bị (đth) ,
-        width=device-width: chiều rộng trên trang màn hình sử dụng
-        initial-scale=1.0: mức zoom ban đầu là 100% định mức giao diện ban đầu-->
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BusGo – Hệ thống Xe Buýt Thông Minh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f3ee;
+  --bg2:#ffffff;
+  --bg3:#edeae3;
+  --text:#0f0e0c;
+  --text2:#5a5750;
+  --text3:#9a9690;
+  --accent:#1a56db;
+  --accent2:#0e3fa3;
+  --accent-light:#e8effe;
+  --green:#15803d;
+  --green-bg:#dcfce7;
+  --amber:#b45309;
+  --amber-bg:#fef3c7;
+  --red:#dc2626;
+  --red-bg:#fee2e2;
+  --border:#e0ddd5;
+  --card-shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 16px rgba(0,0,0,0.06);
+  --radius:14px;
+  --radius-sm:8px;
+  --font-display:'Syne',sans-serif;
+  --font-body:'DM Sans',sans-serif;
+}
+.dark{
+  --bg:#111010;
+  --bg2:#1a1918;
+  --bg3:#222120;
+  --text:#f5f3ee;
+  --text2:#a8a49c;
+  --text3:#6b6760;
+  --accent:#4d7fe0;
+  --accent2:#7aa3f0;
+  --accent-light:#1a2540;
+  --green:#4ade80;
+  --green-bg:#14532d;
+  --amber:#fbbf24;
+  --amber-bg:#451a03;
+  --red:#f87171;
+  --red-bg:#450a0a;
+  --border:#2a2826;
+  --card-shadow:0 1px 3px rgba(0,0,0,0.3),0 4px 16px rgba(0,0,0,0.2);
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);transition:background .3s,color .3s;line-height:1.6}
 
-    
-    <title>Tuyến xe buýt</title> <!--tiêu đề trang web-->
-    <!--Dùng để tải thư viện bên ngoài để hiển thị bản đồ (Leaflet), tuyến đường (Leaflet Routing Machine), và MQTT web-->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script> <!--link nhúng bản đồ-->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script> <!--Nhúng web mqtt-->
+/* NAVBAR */
+nav{
+  position:sticky;top:0;z-index:1000;
+  background:rgba(245,243,238,0.88);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  transition:background .3s,border-color .3s;
+}
+.dark nav{background:rgba(17,16,16,0.88)}
+.nav-inner{
+  max-width:1200px;margin:0 auto;
+  display:flex;align-items:center;
+  padding:.75rem 1.5rem;gap:2rem;
+}
+.logo{
+  font-family:var(--font-display);font-weight:800;font-size:1.4rem;
+  color:var(--accent);text-decoration:none;letter-spacing:-0.5px;
+  display:flex;align-items:center;gap:.4rem;flex-shrink:0;
+}
+.logo-badge{
+  background:var(--accent);color:#fff;
+  font-size:.55rem;font-weight:700;letter-spacing:1px;
+  padding:2px 5px;border-radius:4px;vertical-align:2px;
+  font-family:var(--font-body);
+}
+.nav-links{display:flex;gap:1.5rem;list-style:none;flex:1;justify-content:center}
+.nav-links a{
+  font-size:.875rem;font-weight:500;color:var(--text2);text-decoration:none;
+  transition:color .2s;padding:.25rem 0;border-bottom:2px solid transparent;
+}
+.nav-links a:hover,.nav-links a.active{color:var(--text);border-bottom-color:var(--accent)}
+.nav-actions{display:flex;align-items:center;gap:.75rem;flex-shrink:0}
+.btn-outline{
+  font-family:var(--font-body);font-size:.825rem;font-weight:500;
+  padding:.4rem .9rem;border:1.5px solid var(--border);
+  background:transparent;color:var(--text);border-radius:var(--radius-sm);
+  cursor:pointer;transition:all .2s;
+}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn-primary{
+  font-family:var(--font-body);font-size:.825rem;font-weight:500;
+  padding:.4rem .9rem;border:none;
+  background:var(--accent);color:#fff;border-radius:var(--radius-sm);
+  cursor:pointer;transition:all .2s;
+}
+.btn-primary:hover{background:var(--accent2)}
+.dark-toggle{
+  width:36px;height:36px;border:1.5px solid var(--border);
+  background:transparent;border-radius:var(--radius-sm);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:1rem;
+  transition:all .2s;color:var(--text2);
+}
+.dark-toggle:hover{border-color:var(--accent);color:var(--accent)}
 
-    <!--Dùng CSS xây dựng giao diện màu, định dạng cho từng mục -->
-    <style>
-        body {
-            font-family: Arial, sans-serif; /*font chữ: Arial hoặc bất kì font ko chân*/
-            margin: 0; /*Xóa khoảng cách mặc định (khoảng trắng) xung quanh thân trang.
-→ Cho giao diện gọn gàng hơn, không bị lệch.*/
-            background-color: #fff; /*Nền trắng (#fff là viết tắt của #ffffff).*/
-            color: #000; /*chỉnh màu chữ là màu đen*/
-            transition: background-color 0.3s, color 0.3s; /*animation chuyển màu đen thành trắng khi chuyển sang dark mode*/
-        }
+/* HAMBURGER */
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:.5rem;border:none;background:none}
+.hamburger span{display:block;width:22px;height:2px;background:var(--text);border-radius:2px;transition:.3s}
 
-        .dark-mode {
-            background-color: #121212; /*đổi màu background trắng --> đen*/
-            color: #fff; /*đổi màu chữ thành trắng*/
-        }
+/* HERO */
+.hero{
+  max-width:1200px;margin:0 auto;
+  padding:5rem 1.5rem 3rem;
+  display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;
+}
+.hero-tag{
+  display:inline-flex;align-items:center;gap:.5rem;
+  font-size:.775rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--accent);background:var(--accent-light);
+  padding:.35rem .85rem;border-radius:99px;margin-bottom:1.25rem;
+}
+.hero-tag::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+h1.hero-title{
+  font-family:var(--font-display);font-weight:800;font-size:clamp(2rem,4vw,3.25rem);
+  line-height:1.1;letter-spacing:-1.5px;color:var(--text);margin-bottom:1.25rem;
+}
+h1.hero-title .accent{color:var(--accent)}
+.hero-desc{font-size:1rem;color:var(--text2);line-height:1.7;margin-bottom:2rem;max-width:440px}
+.hero-btns{display:flex;gap:.75rem;flex-wrap:wrap}
+.hero-btn{
+  font-family:var(--font-body);font-size:.9rem;font-weight:500;
+  padding:.65rem 1.4rem;border-radius:var(--radius-sm);cursor:pointer;
+  text-decoration:none;display:inline-flex;align-items:center;gap:.5rem;
+  transition:all .22s;border:1.5px solid transparent;
+}
+.hero-btn-main{background:var(--accent);color:#fff;border-color:var(--accent)}
+.hero-btn-main:hover{background:var(--accent2);border-color:var(--accent2);transform:translateY(-1px)}
+.hero-btn-sec{background:transparent;color:var(--text);border-color:var(--border)}
+.hero-btn-sec:hover{border-color:var(--accent);color:var(--accent)}
+.hero-visual{
+  background:var(--bg2);border:1.5px solid var(--border);
+  border-radius:20px;overflow:hidden;box-shadow:var(--card-shadow);
+  height:340px;position:relative;
+}
+.hero-map-placeholder{
+  width:100%;height:100%;
+  background:linear-gradient(135deg,var(--accent-light) 0%,var(--bg3) 100%);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:1rem;color:var(--text2);
+}
+.pulse-dot{
+  width:60px;height:60px;border-radius:50%;
+  background:var(--accent);display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:1.5rem;position:relative;
+}
+.pulse-dot::after{
+  content:'';position:absolute;inset:-8px;border-radius:50%;
+  border:2px solid var(--accent);animation:pulse 2s infinite;
+}
+@keyframes pulse{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(1.5)}}
+#hero-map{width:100%;height:100%}
 
-        header { /*phần đầu thanh xanh dương trên cùng*/
-            background-color: #2196F3; /*mã màu thanh xanh dương trên cùng */
-            color: white; /*màu chữ trắng*/
-            padding: 1rem; /*tạo khung giữ web*/
-            text-align: center; /*chữ ở giữa phần khung xanh dương*/
-            position: sticky; /*cuộn trang xuống giữa header và body*/
-            top: 0; /*cố định vị trí trang web ở đầu trang*/
-            z-index: 10; /*header luôn ở đầu trang và được đè các layer khác lên*/
-        }
+/* STATS */
+.stats-section{max-width:1200px;margin:0 auto;padding:1rem 1.5rem 4rem}
+.stats-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;
+}
+.stat-card{
+  background:var(--bg2);border:1.5px solid var(--border);
+  border-radius:var(--radius);padding:1.5rem;
+  box-shadow:var(--card-shadow);transition:transform .2s,box-shadow .2s;
+  display:flex;flex-direction:column;gap:.5rem;
+}
+.stat-card:hover{transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,0,0,.1)}
+.stat-icon{
+  width:40px;height:40px;border-radius:var(--radius-sm);
+  background:var(--accent-light);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:.25rem;
+}
+.stat-num{font-family:var(--font-display);font-size:2rem;font-weight:800;color:var(--text);line-height:1}
+.stat-label{font-size:.825rem;color:var(--text3);font-weight:400}
 
-        #resetPage {
-            cursor: pointer; /*hiển thị con trỏ trên thanh header*/
-        }
+/* SECTION HEADER */
+.section-header{text-align:center;margin-bottom:2.5rem}
+.section-tag{
+  display:inline-block;font-size:.725rem;font-weight:600;letter-spacing:2px;
+  text-transform:uppercase;color:var(--accent);margin-bottom:.75rem;
+}
+.section-title{
+  font-family:var(--font-display);font-size:clamp(1.5rem,3vw,2.25rem);
+  font-weight:700;letter-spacing:-0.5px;color:var(--text);margin-bottom:.5rem;
+}
+.section-sub{font-size:.9rem;color:var(--text2)}
 
-        #darkModeToggle { /*hiển thị darkmode trên web*/
-            position: absolute; /*vị trí giá trị tuyệt đối*/
-            top: 1rem; /*căn nút cách mép trên và mép phải góc bên phải của trang*/
-            right: 1rem;
-            padding: 0.3rem 0.6rem; /*tạo khung bên trên để hiển thị vị trí ở giữa*/
-            border: none; /*xóa viền thừa*/
-            background: white; /*nền của darkmode màu trắng*/
-            color: #2196F3; /*mã màu hình mặt trăng */
-            border-radius: 4px; /*bo góc */
-            cursor: pointer;/*tính năng ấn--> trỏ chuột */
-        }
+/* MAP SECTION */
+.map-section{max-width:1200px;margin:0 auto;padding:2rem 1.5rem}
+#live-map{
+  height:480px;border-radius:var(--radius);overflow:hidden;
+  border:1.5px solid var(--border);box-shadow:var(--card-shadow);
+}
+.map-legend{
+  display:flex;gap:1.5rem;justify-content:center;margin-top:1rem;flex-wrap:wrap;
+}
+.legend-item{display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--text2)}
+.legend-dot{width:10px;height:10px;border-radius:50%}
 
-        .bus-list { /*chứa các phần tử của xe buýt*/
-            display: flex; /*trình bày các biến xe ngang trên 1 hàng 
-                            [Tuyến 08]   [Tuyến 05]   [Tuyến 150] */
-            justify-content: center; /*cho các phần tử con ở giữa theo chiều ngang*/
-            gap: 1rem; /*tạo khoảng cách giữa các phần con*/
-            padding: 1rem; /*tạo khoảng cách khung chứa các phần thử xe con*/
-        }
+/* BUS ROUTES */
+.routes-section{max-width:1200px;margin:0 auto;padding:2rem 1.5rem 4rem}
+.routes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem}
+.route-card{
+  background:var(--bg2);border:1.5px solid var(--border);
+  border-radius:var(--radius);padding:1.5rem;cursor:pointer;
+  box-shadow:var(--card-shadow);transition:all .25s;
+  position:relative;overflow:hidden;
+}
+.route-card::before{
+  content:'';position:absolute;top:0;left:0;width:4px;height:100%;
+  background:var(--route-color,var(--accent));
+}
+.route-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.12)}
+.route-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+.route-badge{
+  font-family:var(--font-display);font-weight:800;font-size:1.5rem;
+  color:var(--route-color,var(--accent));
+}
+.route-status{
+  font-size:.72rem;font-weight:600;padding:.25rem .6rem;border-radius:99px;
+}
+.status-active{background:var(--green-bg);color:var(--green)}
+.status-idle{background:var(--amber-bg);color:var(--amber)}
+.route-name{font-size:.875rem;color:var(--text2);margin-bottom:.25rem;line-height:1.4}
+.route-from,.route-to{font-size:.8rem;color:var(--text3)}
+.route-arrow{color:var(--accent);margin:0 .25rem}
+.route-footer{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:1rem;padding-top:.75rem;border-top:1px solid var(--border);
+}
+.route-meta{font-size:.775rem;color:var(--text3);display:flex;align-items:center;gap:.3rem}
+.btn-detail{
+  font-size:.775rem;font-weight:500;color:var(--accent);
+  background:var(--accent-light);border:none;padding:.3rem .7rem;
+  border-radius:var(--radius-sm);cursor:pointer;transition:all .2s;
+  font-family:var(--font-body);
+}
+.btn-detail:hover{background:var(--accent);color:#fff}
 
-        .bus-card { /*xây dựng giao diện của từng thẻ xe */
-            width: 120px; /*chiều rộng của từng thẻ là 120px*/
-            padding: 0.5rem; /*tạo khoảng trống ở trong*/
-            border: 2px solid #ccc; /*khung viền của thẻ*/
-            border-radius: 10px; /*bo góc thẻ*/
-            text-align: center; /*khoảng cách thẻ ở giữa*/
-            cursor: pointer;/*tính năng trỏ chuột-->click*/
-        }
+/* NEARBY STOPS */
+.nearby-section{max-width:1200px;margin:0 auto;padding:0 1.5rem 4rem}
+.nearby-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.nearby-card{
+  background:var(--bg2);border:1.5px solid var(--border);
+  border-radius:var(--radius);box-shadow:var(--card-shadow);
+}
+.nearby-header{
+  padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:.75rem;
+}
+.stop-icon{
+  width:38px;height:38px;border-radius:var(--radius-sm);
+  background:var(--accent-light);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;
+}
+.nearby-stop-name{font-weight:600;font-size:.925rem;color:var(--text)}
+.nearby-stop-dist{font-size:.775rem;color:var(--text3)}
+.bus-arrivals{padding:.75rem 1.5rem}
+.arrival-item{
+  display:flex;align-items:center;gap:.75rem;
+  padding:.6rem 0;border-bottom:1px solid var(--border);
+}
+.arrival-item:last-child{border-bottom:none}
+.bus-num{
+  width:36px;height:36px;border-radius:var(--radius-sm);
+  background:var(--accent);color:#fff;
+  font-family:var(--font-display);font-weight:700;font-size:.8rem;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.arrival-info{flex:1}
+.arrival-route{font-size:.825rem;font-weight:500;color:var(--text)}
+.arrival-time{font-size:.75rem;color:var(--text3)}
+.arrival-badge{
+  font-size:.7rem;font-weight:600;padding:.2rem .55rem;border-radius:99px;white-space:nowrap;
+}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-amber{background:var(--amber-bg);color:var(--amber)}
+.badge-red{background:var(--red-bg);color:var(--red)}
 
-            .bus-card img { /*hiển thị hình ảnh của từng xe*/
-                width: 100%; /*giúp thẻ ảnh full ảnh không tràn viền */
-                border-radius: 8px; /*bo góc ảnh*/
-            }
+/* QR PAYMENT */
+.payment-section{
+  max-width:1200px;margin:0 auto;padding:0 1.5rem 4rem;
+}
+.payment-card{
+  background:var(--bg2);border:1.5px solid var(--border);border-radius:20px;
+  padding:3rem;box-shadow:var(--card-shadow);
+  display:grid;grid-template-columns:1fr auto;gap:3rem;align-items:center;
+}
+.payment-title{font-family:var(--font-display);font-size:1.5rem;font-weight:700;margin-bottom:.75rem}
+.payment-desc{color:var(--text2);font-size:.9rem;margin-bottom:1.5rem;line-height:1.7}
+.payment-methods{display:flex;gap:.75rem;flex-wrap:wrap}
+.method-badge{
+  padding:.4rem .8rem;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  font-size:.8rem;font-weight:500;color:var(--text2);background:var(--bg3);
+}
+.qr-wrapper{
+  background:white;border-radius:var(--radius);padding:1.5rem;
+  display:flex;flex-direction:column;align-items:center;gap:.75rem;
+  box-shadow:var(--card-shadow);min-width:200px;
+  position:relative;overflow:hidden;
+}
+.qr-glow{
+  position:absolute;top:-20px;right:-20px;width:80px;height:80px;
+  border-radius:50%;background:var(--accent);opacity:.08;
+  animation:glowpulse 3s ease-in-out infinite;
+}
+@keyframes glowpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
+.qr-code{
+  width:140px;height:140px;
+  background:
+    repeating-linear-gradient(0deg,#000 0 4px,transparent 4px 8px),
+    repeating-linear-gradient(90deg,#000 0 4px,transparent 4px 8px);
+  border-radius:4px;opacity:.85;
+}
+.qr-label{font-size:.775rem;color:#666;font-weight:500;text-align:center}
+.qr-amount{font-family:var(--font-display);font-size:1rem;font-weight:700;color:var(--accent)}
 
-            .bus-card.selected {
-                border-color: #2196F3; /*khi được click vào thì khung viền thay đổi từ xám -->xanh*/
-            }
+/* TOAST */
+.toast-container{
+  position:fixed;bottom:1.5rem;right:1.5rem;
+  display:flex;flex-direction:column;gap:.5rem;z-index:9999;
+}
+.toast{
+  background:var(--bg2);border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);padding:.75rem 1rem;
+  box-shadow:var(--card-shadow);
+  display:flex;align-items:center;gap:.75rem;
+  font-size:.825rem;min-width:280px;max-width:360px;
+  animation:toastin .3s ease;
+}
+@keyframes toastin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.toast.fadeout{animation:toastout .3s ease forwards}
+@keyframes toastout{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(10px)}}
+.toast-icon{
+  width:32px;height:32px;border-radius:var(--radius-sm);
+  background:var(--green-bg);color:var(--green);
+  display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;
+}
+.toast-text{flex:1}
+.toast-title{font-weight:600;color:var(--text);margin-bottom:1px}
+.toast-sub{color:var(--text3);font-size:.75rem}
 
-        #map { /*hiển thị giao diện map*/
-            height: 400px; /*chiều cao của map*/
-            margin: 1rem; /*tạo khoảng trống xung quanh*/
-            border-radius: 10px;/*bo góc map*/
-        }
+/* FOOTER */
+footer{
+  background:var(--bg2);border-top:1px solid var(--border);
+  padding:2.5rem 1.5rem;margin-top:2rem;
+}
+.footer-inner{
+  max-width:1200px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:1rem;
+}
+.footer-logo{font-family:var(--font-display);font-weight:800;font-size:1.1rem;color:var(--accent)}
+.footer-links{display:flex;gap:1.5rem;list-style:none}
+.footer-links a{font-size:.825rem;color:var(--text3);text-decoration:none;transition:color .2s}
+.footer-links a:hover{color:var(--text)}
+.footer-copy{font-size:.775rem;color:var(--text3)}
 
-        #stop-list {
-            margin: 1rem; /*tạo khoảng trống xung quanh*/
-            padding: 1rem; /*tạo khung chứa danh sách ở bên dưới*/
-            border: 1px solid #ccc; /*tạo viền mỏng cho danh sách trạm*/
-            border-radius: 10px; /*bo góc khung ở dưới*/
-            background: #f9f9f9; /*màu xám của danh sách*/
-        }
-
-        .dark-mode #stop-list {
-            background: #1e1e1e;/*đổi màu nền xám --> đen */
-            border-color: #555; /*màu viền đổi từ xám nhạt-->xám đen*/
-        }
-    </style>
+/* RESPONSIVE */
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;padding:3rem 1rem 2rem}
+  .hero-visual{height:240px}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .routes-grid{grid-template-columns:1fr}
+  .nearby-grid{grid-template-columns:1fr}
+  .payment-card{grid-template-columns:1fr;text-align:center}
+  .payment-methods{justify-content:center}
+  .qr-wrapper{margin:0 auto}
+  .nav-links{display:none}
+  .hamburger{display:flex}
+}
+@media(max-width:600px){
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .hero-btns{flex-direction:column}
+}
+</style>
 </head>
-
 <body>
-    <header> <!--phần đầu-->
-        <h1 id="resetPage">THÔNG TIN XE BUÝT</h1> <!--hiển thị thanh tiêu đề với kích thước tiêu đề lớn-->
-        <button id="darkModeToggle">🌙</button> <!--khởi tạo hiển thị nút ấn darkmode-->
-    </header>
 
-    <div class="bus-list"> <!--Tạo thẻ xe 8-->
-        <div class="bus-card" data-bus="8">
-            <img src="xe8.jpg" alt="Xe buýt tuyến 8" />
-            <p>Tuyến 08</p>
-        </div>
-    <!--danh sách thẻ xe 5-->
-    <div class="bus-card" data-bus="5">
-            <img src="xe5.jpg" alt="Xe buýt tuyến 5" />
-            <p>Tuyến 05</p>
-        </div>
-    <!--danh sách thẻ xe 150-->
-    <div class="bus-card" data-bus="150">
-            <img src="xe150.jpg" alt="Xe buýt tuyến 150" />
-            <p>Tuyến 150</p>
-        </div>
+<!-- NAVBAR -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="#" class="logo">
+      🚍 BusGo <span class="logo-badge">LIVE</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#" class="active">Trang chủ</a></li>
+      <li><a href="#routes">Tuyến xe</a></li>
+      <li><a href="#map-section">Bản đồ</a></li>
+      <li><a href="#nearby">Tra cứu trạm</a></li>
+      <li><a href="#payment">Thanh toán</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="btn-outline">Đăng nhập</button>
+      <button class="btn-primary">Tài khoản</button>
+      <button class="dark-toggle" id="darkToggle" aria-label="Chế độ tối">🌙</button>
     </div>
+    <button class="hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
 
-    <!--Khởi tạo hiển thị map-->
-    <div id="map"></div>
-
-    <!--Hiển thị tên danh sách trạm-->
-    <div id="stop-list">
-        <h3>Danh sách trạm sẽ đi qua:</h3>
-        <ul id="stops"></ul>
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-tag">
+      Theo dõi thời gian thực
     </div>
+    <h1 class="hero-title">
+      Hệ thống Xe Buýt<br><span class="accent">Thông Minh</span><br>TP.HCM
+    </h1>
+    <p class="hero-desc">
+      Theo dõi vị trí xe theo thời gian thực, tra cứu tuyến đường và thời gian đến trạm. Đi xe buýt chưa bao giờ dễ dàng đến vậy.
+    </p>
+    <div class="hero-btns">
+      <a href="#routes" class="hero-btn hero-btn-main">🚍 Xem tuyến xe</a>
+      <a href="#map-section" class="hero-btn hero-btn-sec">🗺️ Mở bản đồ</a>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div id="hero-map"></div>
+  </div>
+</section>
 
+<!-- STATS -->
+<section class="stats-section">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">🛣️</div>
+      <div class="stat-num" id="cnt-routes">0</div>
+      <div class="stat-label">Tuyến xe hoạt động</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📍</div>
+      <div class="stat-num" id="cnt-stops">0</div>
+      <div class="stat-label">Trạm dừng toàn thành phố</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🚌</div>
+      <div class="stat-num" id="cnt-buses">0</div>
+      <div class="stat-label">Xe đang hoạt động</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">👥</div>
+      <div class="stat-num" id="cnt-users">0</div>
+      <div class="stat-label">Người dùng hôm nay</div>
+    </div>
+  </div>
+</section>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
-    <script>
-        const darkModeBtn = document.getElementById("darkModeToggle");
-        darkModeBtn.addEventListener("click", () => {
-            document.body.classList.toggle("dark-mode");
-        });
+<!-- MAP SECTION -->
+<section class="map-section" id="map-section">
+  <div class="section-header">
+    <div class="section-tag">Trực tiếp</div>
+    <div class="section-title">Bản đồ thời gian thực</div>
+    <div class="section-sub">Theo dõi vị trí xe buýt và các trạm dừng trên toàn thành phố</div>
+  </div>
+  <div id="live-map"></div>
+  <div class="map-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#1a56db"></div> Tuyến 08</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#15803d"></div> Tuyến 05</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div> Tuyến 150</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f59e0b;border:2px solid #92400e"></div> Xe đang chạy</div>
+  </div>
+</section>
 
-        document.getElementById("resetPage").addEventListener("click", () => {
-            location.reload();
-        });
+<!-- BUS ROUTES -->
+<section class="routes-section" id="routes">
+  <div class="section-header">
+    <div class="section-tag">Tuyến xe</div>
+    <div class="section-title">Danh sách tuyến xe</div>
+    <div class="section-sub">Chọn tuyến để xem chi tiết lộ trình và lịch chạy</div>
+  </div>
+  <div class="routes-grid">
+    <div class="route-card" style="--route-color:#1a56db">
+      <div class="route-header">
+        <div class="route-badge">08</div>
+        <span class="route-status status-active">🟢 Đang chạy</span>
+      </div>
+      <div class="route-name">Bến xe Quận 8 → Đại học Quốc gia</div>
+      <div class="route-from">Bến xe buýt Quận 8</div>
+      <div class="route-to">→ Khu A ĐHQG TP.HCM</div>
+      <div class="route-footer">
+        <div class="route-meta">⏱️ ~65 phút · 28 trạm</div>
+        <button class="btn-detail" onclick="selectRoute('8')">Chi tiết →</button>
+      </div>
+    </div>
+    <div class="route-card" style="--route-color:#15803d">
+      <div class="route-header">
+        <div class="route-badge">05</div>
+        <span class="route-status status-active">🟢 Đang chạy</span>
+      </div>
+      <div class="route-name">Cầu Ông Dầu → Big C Thủ Đức</div>
+      <div class="route-from">Cầu Ông Dầu (Bình Dương)</div>
+      <div class="route-to">→ Big C Thủ Đức</div>
+      <div class="route-footer">
+        <div class="route-meta">⏱️ ~50 phút · 24 trạm</div>
+        <button class="btn-detail" onclick="selectRoute('5')">Chi tiết →</button>
+      </div>
+    </div>
+    <div class="route-card" style="--route-color:#dc2626">
+      <div class="route-header">
+        <div class="route-badge">150</div>
+        <span class="route-status status-idle">🟡 Ít hoạt động</span>
+      </div>
+      <div class="route-name">Bến xe Chợ Lớn → Tân Vạn</div>
+      <div class="route-from">Bến xe Chợ Lớn (Q.5)</div>
+      <div class="route-to">→ Tân Vạn (Bình Dương)</div>
+      <div class="route-footer">
+        <div class="route-meta">⏱️ ~90 phút · 34 trạm</div>
+        <button class="btn-detail" onclick="selectRoute('150')">Chi tiết →</button>
+      </div>
+    </div>
+  </div>
+</section>
 
-        const busCards = document.querySelectorAll(".bus-card");
-        const stopList = document.getElementById("stops");
-        let map = L.map('map').setView([10.75, 106.65], 12);
+<!-- NEARBY STOPS -->
+<section class="nearby-section" id="nearby">
+  <div class="section-header">
+    <div class="section-tag">Gần bạn</div>
+    <div class="section-title">Trạm xe gần nhất</div>
+    <div class="section-sub">Thời gian đến trạm được cập nhật theo thời gian thực</div>
+  </div>
+  <div class="nearby-grid">
+    <div class="nearby-card">
+      <div class="nearby-header">
+        <div class="stop-icon">📍</div>
+        <div>
+          <div class="nearby-stop-name">Trạm Đại học Hồng Bàng</div>
+          <div class="nearby-stop-dist">📏 cách 320m · Quận Bình Thạnh</div>
+        </div>
+      </div>
+      <div class="bus-arrivals">
+        <div class="arrival-item">
+          <div class="bus-num" style="background:#1a56db">08</div>
+          <div class="arrival-info">
+            <div class="arrival-route">Tuyến 08 → ĐHQG</div>
+            <div class="arrival-time">Theo dõi trực tiếp qua MQTT</div>
+          </div>
+          <span class="arrival-badge badge-green">2 phút</span>
+        </div>
+        <div class="arrival-item">
+          <div class="bus-num" style="background:#dc2626">150</div>
+          <div class="arrival-info">
+            <div class="arrival-route">Tuyến 150 → Tân Vạn</div>
+            <div class="arrival-time">Cập nhật lần cuối: 3 phút trước</div>
+          </div>
+          <span class="arrival-badge badge-amber">6 phút</span>
+        </div>
+        <div class="arrival-item">
+          <div class="bus-num" style="background:#15803d">05</div>
+          <div class="arrival-info">
+            <div class="arrival-route">Tuyến 05 → Big C</div>
+            <div class="arrival-time">Vừa rời trạm</div>
+          </div>
+          <span class="arrival-badge badge-red">Đã rời</span>
+        </div>
+      </div>
+    </div>
+    <div class="nearby-card">
+      <div class="nearby-header">
+        <div class="stop-icon">📍</div>
+        <div>
+          <div class="nearby-stop-name">Vòng xoay Hàng Xanh</div>
+          <div class="nearby-stop-dist">📏 cách 580m · Quận Bình Thạnh</div>
+        </div>
+      </div>
+      <div class="bus-arrivals">
+        <div class="arrival-item">
+          <div class="bus-num" style="background:#1a56db">08</div>
+          <div class="arrival-info">
+            <div class="arrival-route">Tuyến 08 → Quận 8</div>
+            <div class="arrival-time">Đang tiếp cận trạm</div>
+          </div>
+          <span class="arrival-badge badge-green">Sắp đến</span>
+        </div>
+        <div class="arrival-item">
+          <div class="bus-num" style="background:#dc2626">150</div>
+          <div class="arrival-info">
+            <div class="arrival-route">Tuyến 150 → Chợ Lớn</div>
+            <div class="arrival-time">Đang di chuyển</div>
+          </div>
+          <span class="arrival-badge badge-amber">10 phút</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-        let routeLayer = null;
-        let stopMarkers = [];
-        let userMarker = null;
-        let xeMarkers = {};
-        const busImages = {
-            "8": "xe8.jpg",
-            "5": "xe5.jpg",
-            "150": "xe150.jpg"
-        };
+<!-- PAYMENT -->
+<section class="payment-section" id="payment">
+  <div class="section-header">
+    <div class="section-tag">Thanh toán</div>
+    <div class="section-title">Thanh toán không tiền mặt</div>
+    <div class="section-sub">Quét mã QR để mua vé nhanh chóng và tiện lợi</div>
+  </div>
+  <div class="payment-card">
+    <div>
+      <div class="payment-title">💳 Thanh toán VietQR</div>
+      <p class="payment-desc">
+        Hỗ trợ thanh toán qua tất cả các ngân hàng Việt Nam thông qua hệ thống VietQR. Mua vé ngày, vé tuần hoặc vé tháng với giá ưu đãi.
+      </p>
+      <div class="payment-methods">
+        <div class="method-badge">🏦 VietQR</div>
+        <div class="method-badge">📱 MoMo</div>
+        <div class="method-badge">💙 ZaloPay</div>
+        <div class="method-badge">🟢 VNPay</div>
+      </div>
+    </div>
+    <div class="qr-wrapper">
+      <div class="qr-glow"></div>
+      <div class="qr-code"></div>
+      <div class="qr-label">Quét để thanh toán</div>
+      <div class="qr-amount">7.000 VNĐ / lượt</div>
+    </div>
+  </div>
+</section>
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">🚍 BusGo</div>
+    <ul class="footer-links">
+      <li><a href="#">Giới thiệu</a></li>
+      <li><a href="#">Liên hệ</a></li>
+      <li><a href="#">Điều khoản</a></li>
+      <li><a href="#">API</a></li>
+    </ul>
+    <div class="footer-copy">© 2025 BusGo · TP.Hồ Chí Minh</div>
+  </div>
+</footer>
 
-        const busRoutes = {
-            "8": {
-                color: "blue",
-                coords: [
-                    [10.740, 106.665, "Bến xe buýt Quận 8"],
-                    [10.743, 106.667, "Đường Tạ Quang Bửu"],
-                    [10.750, 106.660, "Quốc lộ 50"],
-                    [10.755, 106.655, "Cầu Nhị Thiên Đường"],
-                    [10.760, 106.660, "Đường Tùng Thiện Vương"],
-                    [10.765, 106.662, "Cầu Chà Và"],
-                    [10.768, 106.663, "Đường Hải Thượng Lãn Ông"],
-                    [10.770, 106.664, "Đường Triệu Quang Phục"],
-                    [10.772, 106.665, "Đường Châu Văn Liêm"],
-                    [10.775, 106.667, "Đường Hồng Bàng"],
-                    [10.780, 106.670, "Đường Lý Thường Kiệt"],
-                    [10.785, 106.672, "Đường Hoàng Văn Thụ"],
-                    [10.790, 106.675, "Đường Phan Đăng Lưu"],
-                    [10.795, 106.678, "Đường Bạch Đằng"],
-                    [10.800, 106.680, "Đường Xô Viết Nghệ Tĩnh"],
-                    [10.805, 106.683, "Quốc lộ 13"],
-                    [10.810, 106.685, "Đường Phạm Văn Đồng"],
-                    [10.815, 106.688, "Đường Kha Vạn Cân"],
-                    [10.820, 106.690, "Đường Võ Văn Ngân"],
-                    [10.825, 106.693, "Ngã tư Thủ Đức"],
-                    [10.830, 106.695, "Xa lộ Hà Nội"],
-                    [10.835, 106.698, "Quốc lộ 1"],
-                    [10.840, 106.700, "Cầu vượt quay đầu"],
-                    [10.850, 106.703, "Đường 621"],
-                    [10.860, 106.705, "Quảng trường Sáng Tạo"],
-                    [10.865, 106.707, "Đường Vành Đai"],
-                    [10.868, 106.709, "Đường Nguyễn Hiền"],
-                    [10.870, 106.800, "Bến xe buýt Khu A ĐHQG TP.HCM"]
-                ]
-            },
-            /* "9": {
-                color: "green",
-                coords: [
-                    [10.755, 106.635, "Bến xe buýt Chợ Lớn (Bến A)"],
-                    [10.758, 106.637, "Đường Lê Quang Sung"],
-                    [10.760, 106.638, "Đường Phạm Đình Hổ"],
-                    [10.765, 106.640, "Đường Hồng Bàng"],
-                    [10.770, 106.645, "Đường Kinh Dương Vương"],
-                    [10.775, 106.648, "Quốc lộ 1"],
-                    [10.780, 106.650, "Đường Đinh Đức Thiện"],
-                    [10.785, 106.653, "Hương lộ 11"],
-                    [10.790, 106.655, "Hưng Long"]
-                ]
-            }, */
-            "5": {
-                color: "green",
-                coords: [
-                    [10.915, 106.795, "Cầu Ông Dầu"],
-                    [10.920, 106.800, "Đường số 3"],
-                    [10.925, 106.805, "Đường số 4"],
-                    [10.930, 106.810, "Cân Nhơn Hòa"],
-                    [10.935, 106.815, "Ngã 3 Hiệp Bình"],
-                    [10.940, 106.820, "Ngã 3 Đường Hiệp Bình"],
-                    [10.945, 106.825, "Trạm y tế Hiệp Bình Phước"],
-                    [10.950, 106.830, "UBND P.Hiệp Bình Phước"],
-                    [10.955, 106.835, "Hồ Bơi"],
-                    [10.960, 106.840, "Ngã 4 Bình Phước"],
-                    [10.965, 106.845, "Chợ Đầu Mối"],
-                    [10.970, 106.850, "Chợ Tam Bình"],
-                    [10.975, 106.855, "Hồ Bơi"],
-                    [10.980, 106.860, "Chợ Tam Hải"],
-                    [10.985, 106.865, "Cầu vượt Sóng Thần"],
-                    [10.990, 106.870, "Bến xe Lam Hồng"],
-                    [10.995, 106.875, "Giày da Thái Bình"],
-                    [11.000, 106.880, "Linh Xuân"],
-                    [11.005, 106.885, "Cầu vượt Linh Xuân"],
-                    [11.010, 106.890, "Chợ Linh Xuân"],
-                    [11.015, 106.895, "Thánh thất Cao Đài Linh Xuân"],
-                    [11.020, 106.900, "Đường số 8"],
-                    [11.025, 106.905, "Chùa Từ Quang"],
-                    [11.030, 106.910, "Big C"]
-                ]
-            },
-            "150": {
-                color: "red",
-                coords: [
-                    /*[10.740, 106.620, "Bến xe Miền Tây"],
-                    [10.745, 106.625, "Đường Kinh Dương Vương"],
-                    [10.750, 106.630, "Đường Hậu Giang"],
-                    [10.755, 106.635, "Đường Tháp Mười"],
-                    [10.760, 106.640, "Đường Hải Thượng Lãn Ông"],
-                    [10.765, 106.645, "Đường Châu Văn Liêm"],
-                    [10.770, 106.650, "Đường Hồng Bàng"],
-                    [10.775, 106.655, "Đường An Dương Vương"],
-                    [10.780, 106.660, "Đường Nguyễn Tri Phương"],
-                    [10.785, 106.665, "Đường 3 Tháng 2"],
-                    [10.790, 106.670, "Đường Lý Thái Tổ"],
-                    [10.795, 106.675, "Đường Điện Biên Phủ"],
-                    [10.800, 106.680, "Đường Võ Nguyên Giáp"],
-                    [10.805, 106.685, "Xa lộ Hà Nội"],
-                    [10.810, 106.690, "Quốc lộ 1"],
-                    [10.815, 106.695, "Cầu vượt quay đầu"],
-                    [10.820, 106.700, "Đường song hành bờ Nam Quốc lộ 1"],
-                    [10.825, 106.705, "Đường 621"],
-                    [10.830, 106.710, "Quảng Trường Sáng Tạo"],
-                    [10.835, 106.715, "Đường Vành Đai"],
-                    [10.840, 106.720, "Đường Nguyên Hiền"],
-                    [10.845, 106.725, "Bến xe buýt khu A Đại học Quốc gia TP.HCM"] */
-                    [10.746, 106.634, "Bến xe Chợ Lớn"],
-                    [10.776, 106.693, "Chu Văn An"],
-                    [10.775, 106.634, "Thuận Kiều Plaza"],
-                    [10.757, 106.634, "Bệnh viện Chợ Rẫy"],
-                    [10.762, 106.634, "Cầu Điện Biên Phủ"],
-                    [10.762, 106.634, "Trạm Điện Nguyễn Cửu Vân"],
-                    [10.762, 106.634, "Đại học Hồng Bàng"],
-                    [10.762, 106.634, "Vòng xoay Hàng Xanh"],
-                    [10.762, 106.634, "Đại học Hutech"],
-                    [10.762, 106.634, "Khu Du lịch Văn Thánh"],
-                    [10.762, 106.634, "Cầu Sài Gòn"],
-                    [10.762, 106.634, "Cầu Đen"],
-                    [10.762, 106.634, "Thảo Điền"],
-                    [10.762, 106.634, "Metro Quận 2"],
-                    [10.762, 106.634, "Cát Lái"],
-                    [10.762, 106.634, "Xi măng hà tiên - trạm thu phí"],
-                    [10.762, 106.634, "Ngã 4 Tây Hòa (RMK)"],
-                    [10.762, 106.634, "Trạm xây dựng"],
-                    [10.762, 106.634, "Khu QLGTDT số 2"],
-                    [10.762, 106.634, "Ngã 4 Bình Thái"],
-                    [10.762, 106.634, "UBND quận 9"],
-                    [10.762, 106.634, "Bê tông Hải Âu"],
-                    [10.762, 106.634, "Ngã 4 Thủ Đức"],
-                    [10.762, 106.634, "Công an Quận 9"],
-                    [10.762, 106.634, "Chợ chiều"],
-                    [10.762, 106.634, "Khu Công nghệ cao quận 9"],
-                    [10.762, 106.634, "Cầu Vượt Trạm 2"],
-                    [10.762, 106.634, "Suối Tiên"],
-                    [10.762, 106.634, "Nghĩa trang liệt sĩ TP.HCM"],
-                    [10.762, 106.634, "Công ty Nam Hàn"],
-                    [10.762, 106.634, "Khu tưởng niệm các Vua Hùng"],
-                    [10.762, 106.634, "Trạm xăng Hiệp Phú"],
-                    [10.762, 106.634, "Ngã 3 Tân Vạn"],
-                    [10.762, 106.634, "Tân Vạn"]
-                ]
-            }
-        };
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
 
-        /*function getDistance(lat1, lng1, lat2, lng2) {
-            const R = 6371; // Bán kính trái đất (km)
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLng = (lng2 - lng1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLng / 2) * Math.sin(dLng / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c; // Khoảng cách (km)
-        } */
+<script>
+// Dark mode
+const darkToggle = document.getElementById('darkToggle');
+darkToggle.addEventListener('click', () => {
+  document.body.classList.toggle('dark');
+  darkToggle.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+});
 
-        busCards.forEach(card => {
-            card.addEventListener("click", () => { /*xử lí việc nhấn vào trạm*/
-                busCards.forEach(c => c.classList.remove("selected"));
-                card.classList.add("selected");
+// Counter animation
+function animateCounter(el, target, suffix = '') {
+  let start = 0;
+  const duration = 1800;
+  const step = (timestamp) => {
+    if (!start) start = timestamp;
+    const progress = Math.min((timestamp - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.floor(eased * target).toLocaleString() + suffix;
+    if (progress < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
 
-                const busNumber = card.dataset.bus; /*dữ liệu số xe sẽ cập nhật dữ liệu xe buýt đó*/
-                const route = busRoutes[busNumber]; /*vẽ đường giữa các trạm*/
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      animateCounter(document.getElementById('cnt-routes'), 20);
+      animateCounter(document.getElementById('cnt-stops'), 150);
+      animateCounter(document.getElementById('cnt-buses'), 38);
+      animateCounter(document.getElementById('cnt-users'), 1200);
+      observer.disconnect();
+    }
+  });
+}, { threshold: 0.3 });
+observer.observe(document.querySelector('.stats-section'));
 
-                /* clear road map cũ */
-                if (routeLayer) routeLayer.remove();
-                stopMarkers.forEach(marker => marker.remove()); /*xóa các điểm trên trạm cũ*/
-                stopMarkers = []; /*trống danh sách trạm hiển thị */
-                stopList.innerHTML = ""; /*xóa các trạm trên giao diện*/
+// Toast notifications
+function showToast(title, sub, icon = '🚌') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `
+    <div class="toast-icon">${icon}</div>
+    <div class="toast-text">
+      <div class="toast-title">${title}</div>
+      <div class="toast-sub">${sub}</div>
+    </div>
+  `;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('fadeout');
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
 
+// Auto toasts
+const toastMessages = [
+  ['Xe 08 đã đến trạm', 'Đại học Hồng Bàng · Quận Bình Thạnh', '🚍'],
+  ['Xe 05 đến trạm Linh Xuân', 'Còn 2 ghế trống · 11:42 SA', '🚌'],
+  ['Xe 150 rời trạm Cầu Sài Gòn', 'Đang hướng về Thảo Điền', '🟡'],
+  ['Tuyến 08 trễ 3 phút', 'Do kẹt xe tại Hàng Xanh', '⚠️'],
+];
+let toastIdx = 0;
+setTimeout(() => {
+  const [t, s, i] = toastMessages[toastIdx++ % toastMessages.length];
+  showToast(t, s, i);
+  setInterval(() => {
+    const [t, s, i] = toastMessages[toastIdx++ % toastMessages.length];
+    showToast(t, s, i);
+  }, 9000);
+}, 3000);
 
-                routeLayer = L.Routing.control({
-                    waypoints: route.coords.map(c => L.latLng(c[0], c[1])),
-                    lineOptions: { styles: [{ color: route.color, weight: 5 }] },
-                    createMarker: () => null,
-                    addWaypoints: false,
-                    draggableWaypoints: false,
-                    routeWhileDragging: false,
-                    show: false
-                }).addTo(map);
+// Hero mini-map
+const heroMap = L.map('hero-map', {
+  zoomControl: false, attributionControl: false,
+  dragging: false, scrollWheelZoom: false, doubleClickZoom: false
+}).setView([10.775, 106.665], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(heroMap);
 
-                route.coords.forEach(([lat, lng, name], index) => {
-                    const marker = L.marker([lat, lng]).addTo(map).bindPopup(name);
-                    stopMarkers.push(marker);
-                    const li = document.createElement("li");
-                    li.textContent = `${index + 1}. ${name}`;
-                    stopList.appendChild(li);
-                });
+// Live map
+const liveMap = L.map('live-map').setView([10.77, 106.69], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors'
+}).addTo(liveMap);
 
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(position => {
-                        const latlng = [position.coords.latitude, position.coords.longitude];
-                        if (userMarker) userMarker.remove();
-                        userMarker = L.marker(latlng).addTo(map).bindPopup("Vị trí của bạn").openPopup();
-                    });
-                }
-            });
-        });
+const busRoutes = {
+  "8": {
+    color: "#1a56db",
+    coords: [
+      [10.740,106.665,"Bến xe buýt Quận 8"],[10.743,106.667,"Đường Tạ Quang Bửu"],
+      [10.750,106.660,"Quốc lộ 50"],[10.755,106.655,"Cầu Nhị Thiên Đường"],
+      [10.760,106.660,"Đường Tùng Thiện Vương"],[10.765,106.662,"Cầu Chà Và"],
+      [10.770,106.664,"Đường Triệu Quang Phục"],[10.775,106.667,"Đường Hồng Bàng"],
+      [10.780,106.670,"Đường Lý Thường Kiệt"],[10.790,106.675,"Đường Phan Đăng Lưu"],
+      [10.800,106.680,"Đường Xô Viết Nghệ Tĩnh"],[10.810,106.685,"Đường Phạm Văn Đồng"],
+      [10.820,106.690,"Đường Võ Văn Ngân"],[10.825,106.693,"Ngã tư Thủ Đức"],
+      [10.850,106.703,"Đường 621"],[10.870,106.800,"Bến xe buýt Khu A ĐHQG TP.HCM"]
+    ]
+  },
+  "5": {
+    color: "#15803d",
+    coords: [
+      [10.915,106.795,"Cầu Ông Dầu"],[10.920,106.800,"Đường số 3"],
+      [10.930,106.810,"Cân Nhơn Hòa"],[10.940,106.820,"Ngã 3 Đường Hiệp Bình"],
+      [10.950,106.830,"UBND P.Hiệp Bình Phước"],[10.960,106.840,"Ngã 4 Bình Phước"],
+      [10.970,106.850,"Chợ Tam Bình"],[10.980,106.860,"Chợ Tam Hải"],
+      [10.990,106.870,"Bến xe Lam Hồng"],[11.000,106.880,"Linh Xuân"],
+      [11.010,106.890,"Chợ Linh Xuân"],[11.030,106.910,"Big C"]
+    ]
+  },
+  "150": {
+    color: "#dc2626",
+    coords: [
+      [10.746,106.634,"Bến xe Chợ Lớn"],[10.757,106.640,"Bệnh viện Chợ Rẫy"],
+      [10.762,106.650,"Đại học Hồng Bàng"],[10.763,106.658,"Vòng xoay Hàng Xanh"],
+      [10.765,106.665,"Đại học Hutech"],[10.768,106.675,"Khu Du lịch Văn Thánh"],
+      [10.770,106.680,"Cầu Sài Gòn"],[10.772,106.690,"Thảo Điền"],
+      [10.775,106.700,"Metro Quận 2"],[10.762,106.720,"Cát Lái"],
+      [10.760,106.740,"Ngã 4 Thủ Đức"],[10.758,106.760,"Khu Công nghệ cao quận 9"],
+      [10.760,106.780,"Suối Tiên"],[10.762,106.790,"Ngã 3 Tân Vạn"],[10.763,106.800,"Tân Vạn"]
+    ]
+  }
+};
 
-        const mqttClient = new Paho.MQTT.Client("wss://214f09799e8e4edc953995b375c60fa3.s1.eu.hivemq.cloud:8884/mqtt", "client-hhhh" + Math.random());
-        mqttClient.connect({
-            useSSL: true,
-            userName: "project",
-            password: "345678910JQKA2toitrang",
-            onSuccess: () => {
-                console.log("MQTT connected");
-               /* mqttClient.subscribe("8");
-                mqttClient.subscribe("9");
-                mqttClient.subscribe("10"); */
-                mqttClient.subscribe("tram/#");
-            },
-            onFailure: err => console.error("Lỗi kết nối MQTT", err)
-        });
+// Draw routes on live map
+Object.entries(busRoutes).forEach(([num, route]) => {
+  const latlngs = route.coords.map(c => [c[0], c[1]]);
+  L.polyline(latlngs, { color: route.color, weight: 4, opacity: 0.7 }).addTo(liveMap);
+  route.coords.forEach(([lat, lng, name]) => {
+    const dot = L.circleMarker([lat, lng], {
+      radius: 5, color: route.color, fillColor: '#fff',
+      fillOpacity: 1, weight: 2
+    }).addTo(liveMap).bindPopup(`<b>${name}</b><br>Tuyến ${num}`);
+  });
+});
 
-        mqttClient.onMessageArrived = msg => {
-            const topic = msg.destinationName;
-            const payload = msg.payloadString.trim().toLowerCase();
+// Draw same on hero map
+Object.entries(busRoutes).forEach(([num, route]) => {
+  const latlngs = route.coords.map(c => [c[0], c[1]]);
+  L.polyline(latlngs, { color: route.color, weight: 3, opacity: 0.6 }).addTo(heroMap);
+});
 
-            console.log("MQTT message:", payload);
-            //Xác nhận đây là topic dạng trạm/x
-            /* const tramMatch = topic.match(/^tram(\d+)$/);  // khớp với tram2, tram15,...
-            if (!tramMatch) return;
-            const tramIndex = parseInt(tramMatch[1]); // "tram5" → 5 */
-            if (!topic.startsWith("tram/")) return;
-            const tramIndex = parseInt(topic.split("/")[1])-1; // "tram/5" → 5
-            //const [lat, lng, stopName] = route.coords[tramIndex];
-            busRoutes["8"].coords.length === 28 // có 28 trạm từ 0 đến 27
-            busRoutes["5"].coords.length === 24
-            busRoutes["150"].coords.length === 34
-            if (isNaN(tramIndex)) return;
-          
-            //Kiểm tra nếu payload chứa thông tin xe đã đến
-            if (!payload.includes("da den")) return;
+// Animated bus markers
+const busIcon = (color) => L.divIcon({
+  className: '',
+  html: `<div style="width:28px;height:28px;background:${color};border:3px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,0.3)">🚌</div>`,
+  iconSize: [28, 28], iconAnchor: [14, 14]
+});
 
-            //Xe... đã đến --> tách số xe 
-            const xeMatch = payload.match(/xe\s*(\d+)/);
-            if (!xeMatch) return;
-            const xeNumber = xeMatch[1]; // "9"
+const busPositions = { "8": 0, "5": 0, "150": 0 };
+const busMarkers = {};
 
-            //Tìm tuyến đường ứng với số xe đó 
-            const route = busRoutes[xeNumber];
-            if (!route || tramIndex >= route.coords.length) return;
+Object.entries(busRoutes).forEach(([num, route]) => {
+  const pos = busPositions[num];
+  const [lat, lng, name] = route.coords[pos];
+  busMarkers[num] = L.marker([lat, lng], { icon: busIcon(route.color) })
+    .addTo(liveMap)
+    .bindPopup(`<b>🚍 Xe tuyến ${num}</b><br>📍 Trạm: ${name}`);
+});
 
-            //Lấy tọa độ trạm từ dữ liệu tuyến xe
-            const [lat, lng, stopName] = route.coords[tramIndex];
+// Simulate bus movement
+setInterval(() => {
+  Object.entries(busRoutes).forEach(([num, route]) => {
+    busPositions[num] = (busPositions[num] + 1) % route.coords.length;
+    const [lat, lng, name] = route.coords[busPositions[num]];
+    busMarkers[num].setLatLng([lat, lng]);
+    busMarkers[num].setPopupContent(`<b>🚍 Xe tuyến ${num}</b><br>📍 Trạm: ${name}`);
+  });
+}, 3000);
 
-            //Tạo marker riêng biệt cho từng xe tại từng trạm
-            updateBusMarker(xeNumber, [lat, lng], `Xe ${xeNumber} vừa tới trạm: ${stopName}`);
-           // updateBusMarker(`Xe ${xeNumber} vừa tới trạm: ${stopName}`, xeNumber, [lat, lng]);
-            //console.log(`Xe ${xeNumber} đang ở tramIndex ${tramIndex}: ${stopName}`);
-            //tramIndex chức năng là truyền các trạm và các tuyến đường tương ứng
-            //bỏ tramIndex để cập nhật liên tục vị trí xe đó
-            //if(topic==)
-            //topic trạm 5
+// Select route
+function selectRoute(num) {
+  const route = busRoutes[num];
+  if (!route) return;
+  liveMap.setView(route.coords[0], 13);
+  document.querySelector('#map-section').scrollIntoView({ behavior: 'smooth' });
+  showToast(`Đã chọn Tuyến ${num}`, `Đang hiển thị ${route.coords.length} trạm`, '🗺️');
+}
 
-            //msg xe ... đã đến (nếu mes chứa "da den")
-            // thì --> dung 1 bien de luu topic, bien do se la tram
-            // tu tram do, trich vao toa do rieng cua tram
+// MQTT
+try {
+  const mqttClient = new Paho.MQTT.Client(
+    "wss://214f09799e8e4edc953995b375c60fa3.s1.eu.hivemq.cloud:8884/mqtt",
+    "busgo-" + Math.random()
+  );
+  mqttClient.connect({
+    useSSL: true,
+    userName: "project",
+    password: "345678910JQKA2toitrang",
+    onSuccess: () => {
+      console.log("MQTT connected");
+      mqttClient.subscribe("tram/#");
+    },
+    onFailure: () => console.warn("MQTT không kết nối được")
+  });
+  mqttClient.onMessageArrived = (msg) => {
+    const topic = msg.destinationName;
+    const payload = msg.payloadString.trim().toLowerCase();
+    if (!topic.startsWith("tram/")) return;
+    const tramIndex = parseInt(topic.split("/")[1]) - 1;
+    if (!payload.includes("da den")) return;
+    const xeMatch = payload.match(/xe\s*(\d+)/);
+    if (!xeMatch) return;
+    const xeNumber = xeMatch[1];
+    const route = busRoutes[xeNumber];
+    if (!route || tramIndex >= route.coords.length || tramIndex < 0) return;
+    const [lat, lng, stopName] = route.coords[tramIndex];
+    busMarkers[xeNumber]?.setLatLng([lat, lng]);
+    liveMap.setView([lat, lng], 14);
+    showToast(`Xe ${xeNumber} đến trạm`, stopName, '🚍');
+  };
+} catch(e) { console.warn("MQTT init failed", e); }
 
-            // trích cái xe ra từ msg
-           /* hiện ra xe nào đang ở trạm
-
-            --> điểm khác biệt là:
-            ban đầu: topic là xe, msg là tọa độ trạm luôn
-            bây g: topic là tên trạm thoi, tự trích xuất và lưu tọa độ riêng của trạm sau; msg sẽ là xe
-            */
-
-
-           /* đã đến trạm tách số xe trong trạm 
-            Làm hiển thị nhiều xe cùng lúc cùng 1 trạm
-            */
-
-
-
-            // Nếu là tọa độ dạng lat,lng
-            /*
-            if (payload.includes(",")) {
-                const [latStr, lngStr] = payload.split(',');
-                const lat = parseFloat(latStr);
-                const lng = parseFloat(lngStr);
-                if (isNaN(lat) || isNaN(lng)) return;
-
-                // Cập nhật vị trí xe buýt theo tọa độ
-                updateBusMarker(topic, [lat, lng]);
-            }
-
-            // Nếu là tin dạng "xe 8 da den" hoặc "xe 8 cach 2"
-            // Xử lý tin nhắn kiểu: topic = tram/2, payload = "xe da toi tram"
-            else if (topic.startsWith("tram/") && payload === "xe da toi tram") {
-                const tramIndex = parseInt(topic.split("/")[1]); // Lấy số trạm từ topic: tram/2 => 2
-                if (isNaN(tramIndex)) return;
-
-                // Tìm xe đang được chọn (busCard đang có class 'selected')
-                const selectedCard = document.querySelector(".bus-card.selected");
-                if (!selectedCard) return;
-                const busNumber = selectedCard.dataset.bus;
-                const route = busRoutes[busNumber];
-                if (!route) return;
-                */
-
-           /* else if (topic.startsWith("tram/") && payload.includes("da den")) {
-                const tramIndex = parseInt(topic.split("/")[1]);
-                if (isNaN(tramIndex)) return;
-
-                // 🚌 Trích số xe từ chuỗi msg, ví dụ: "xe 8 da den"
-                const xeMatch = payload.match(/xe\s*(\d+)/);
-                if (!xeMatch) return;
-                const xeNumber = xeMatch[1]; // Ví dụ: "8"
-
-                // 🔍 Tìm tuyến xe đang được chọn
-                const route = busRoutes[xeNumber];
-                if (!route || tramIndex >= route.coords.length) return;
-
-                const [lat, lng, stopName] = route.coords[tramIndex];
-
-                // 🆕 Cập nhật xe này đến vị trí trạm
-                updateBusMarker(`${xeNumber}-at-tram-${tramIndex}`, [lat, lng], `Xe ${xeNumber} vừa tới trạm: ${stopName}`);
-            }
-             */ 
-
-
-                /* if (tramIndex >= 0 && tramIndex < route.coords.length) {
-                    const [lat, lng, stopName] = route.coords[tramIndex];
-                    updateBusMarker(busNumber, [lat, lng], `Xe vừa tới trạm: ${stopName}`);
-                } */
-            
-
-        };
-
-        // Hàm cập nhật vị trí xe buýt lên bản đồ
-         /*function updateBusMarker(busNumber, latlng, popupText = "") {
-            const icon = L.icon({
-                iconUrl: 'https://cdn-icons-png.flaticon.com/512/190/190411.png',
-                iconSize: [30, 30]
-            });
-
-            if (xeMarkers[busNumber]) {
-                xeMarkers[busNumber].setLatLng(latlng);
-                if (popupText) xeMarkers[busNumber].bindPopup(popupText);
-            } else {
-                xeMarkers[busNumber] = L.marker(latlng, { icon }).addTo(map);
-                console.log("Tạo marker xe:", busNumber, latlng, popupText);
-               // const html = `<b>🚍 Xe tuyến ${busNumber}</b><br>${popupText}<br><img src="${busImages[busNumber]}" style="width:100px"/>`;
-               // xeMarkers[busNumber].bindPopup(html); 
-                //xeMarkers[id] = L.marker(latlng, { icon }).addTo(map);
-                xeMarkers[busNumber].bindPopup(popupText || "Vị trí xe buýt");
-            }
-
-            map.setView(latlng, 14);
-        } */
-        function updateBusMarker(busNumber, latlng, popupText = "") {
-            const icon = L.icon({
-                iconUrl: 'https://cdn-icons-png.flaticon.com/512/190/190411.png',
-                iconSize: [30, 30]
-            });
-
-            // Nếu marker đã tồn tại → cập nhật lại vị trí và popup
-            if (xeMarkers[busNumber]) {
-                xeMarkers[busNumber].setLatLng(latlng);
-                if (popupText) xeMarkers[busNumber].bindPopup(popupText);
-            } else {
-                // Nếu chưa có → tạo mới
-                xeMarkers[busNumber] = L.marker(latlng, { icon }).addTo(map);
-                xeMarkers[busNumber].bindPopup(popupText || "Vị trí xe buýt");
-            }
-
-            map.setView(latlng, 14);
-        }
-
-
-    </script>
+// Smooth scroll for nav links
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
+  });
+});
+</script>
 </body>
 </html>
